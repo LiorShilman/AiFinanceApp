@@ -74,6 +74,10 @@
   <!-- Action Buttons -->
   <div class="action-buttons">
     <!-- 🆕 New Conversation Management Buttons -->
+    <button class="action-btn help-btn" (click)="toggleHelpModal()">
+      🚀 מדריך למתחיל
+    </button>
+
     <button class="action-btn conversation-btn" (click)="openConversationDialog()" style="background: #9c27b0;">
       💾 ניהול שיחות
     </button>
@@ -248,4 +252,194 @@
   <app-conversation-dialog [isOpen]="showConversationDialog" (conversationSelected)="onConversationSelected($event)"
     (closeEvent)="closeConversationDialog()">
   </app-conversation-dialog>
+
+  <!-- ====================================================
+       🚀 HELP MODAL — דף הסבר מרשים
+       ==================================================== -->
+  <div class="help-overlay" *ngIf="showHelpModal" (click)="toggleHelpModal()">
+    <div class="help-modal" (click)="$event.stopPropagation()">
+
+      <!-- CLOSE -->
+      <button class="help-close" (click)="toggleHelpModal()">✕</button>
+
+      <!-- ── HEADER ── -->
+      <div class="help-header">
+        <div class="help-header-glow"></div>
+        <div class="help-logo">🚀</div>
+        <h2 class="help-title">יועץ פיננסי חכם</h2>
+        <p class="help-subtitle">
+          מערכת בינה מלאכותית מולטי-סוכן — שישה מומחים פיננסיים עובדים <em>במקביל</em> כדי לתת לך את התשובה הטובה ביותר
+        </p>
+        <div class="help-badges">
+          <span class="hbadge">⚡ GPT-4o</span>
+          <span class="hbadge">📊 גרפים חיים</span>
+          <span class="hbadge">🧮 נוסחאות מתמטיות</span>
+          <span class="hbadge">💾 שמירת שיחות</span>
+        </div>
+      </div>
+
+      <!-- ── HOW IT WORKS ── -->
+      <div class="help-section">
+        <h3 class="help-section-title">⚙️ איך המערכת עובדת?</h3>
+        <div class="help-flow">
+          <div class="flow-step">
+            <div class="flow-icon">💬</div>
+            <div class="flow-label">אתה שואל</div>
+            <div class="flow-desc">שאלה חופשית בעברית</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <div class="flow-icon">🧠</div>
+            <div class="flow-label">הניתוב החכם</div>
+            <div class="flow-desc">AI מזהה אילו מומחים רלוונטיים</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <div class="flow-icon">⚡</div>
+            <div class="flow-label">מומחים במקביל</div>
+            <div class="flow-desc">עד 3 מומחים עונים בו-זמנית</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <div class="flow-icon">🔗</div>
+            <div class="flow-label">סינתזה</div>
+            <div class="flow-desc">תשובה מאוחדת + תובנות חדשות</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── AGENTS GRID ── -->
+      <div class="help-section">
+        <h3 class="help-section-title">👥 המומחים שלך</h3>
+        <div class="agents-grid">
+
+          <div class="agent-card" data-agent="pension">
+            <div class="agent-card-icon">🏦</div>
+            <div class="agent-card-name">מומחה פנסיה</div>
+            <ul class="agent-card-examples">
+              <li (click)="sendFromHelp('כמה אחוז מהמשכורת כדאי להפריש לפנסיה?')">כמה לחסוך לפנסיה?</li>
+              <li (click)="sendFromHelp('מה ההבדל בין קרן פנסיה לביטוח מנהלים?')">קרן פנסיה vs ביטוח מנהלים</li>
+              <li (click)="sendFromHelp('מה יהיה גובה הפנסיה שלי אם אני מרוויח 15,000 ש&quot;ח?')">חישוב קצבת פרישה</li>
+            </ul>
+          </div>
+
+          <div class="agent-card" data-agent="mortgage">
+            <div class="agent-card-icon">🏠</div>
+            <div class="agent-card-name">מומחה משכנתא</div>
+            <ul class="agent-card-examples">
+              <li (click)="sendFromHelp('כמה הון עצמי צריך לרכישת דירה ב-2 מיליון?')">הון עצמי לדירה</li>
+              <li (click)="sendFromHelp('מה עדיף — מסלול פריים או קל&quot;צ במשכנתא?')">מסלולי משכנתא</li>
+              <li (click)="sendFromHelp('האם כדאי לי לקנות דירה או להישאר בשכירות?')">קנייה מול שכירות</li>
+            </ul>
+          </div>
+
+          <div class="agent-card" data-agent="investment">
+            <div class="agent-card-icon">📈</div>
+            <div class="agent-card-name">מומחה השקעות</div>
+            <ul class="agent-card-examples">
+              <li (click)="sendFromHelp('איך לבנות תיק השקעות מפוזר עם 100,000 ש&quot;ח?')">בניית תיק השקעות</li>
+              <li (click)="sendFromHelp('מה ההבדל בין ETF לקרן נאמנות?')">ETF vs קרן נאמנות</li>
+              <li (click)="sendFromHelp('כמה כסף יהיה לי אחרי 20 שנה אם אחסוך 2,000 ש&quot;ח בחודש?')">ריבית דריבית לאורך זמן</li>
+            </ul>
+          </div>
+
+          <div class="agent-card" data-agent="tax">
+            <div class="agent-card-icon">🧾</div>
+            <div class="agent-card-name">מומחה מיסוי</div>
+            <ul class="agent-card-examples">
+              <li (click)="sendFromHelp('כמה מס הכנסה אשלם על משכורת של 20,000 ש&quot;ח?')">חישוב מס הכנסה</li>
+              <li (click)="sendFromHelp('איך אקבל החזר מס מקסימלי בישראל?')">מקסום החזר מס</li>
+              <li (click)="sendFromHelp('מהו מס שבח ואיך לחשב אותו על מכירת דירה?')">מס שבח על דירה</li>
+            </ul>
+          </div>
+
+          <div class="agent-card" data-agent="budget">
+            <div class="agent-card-icon">📊</div>
+            <div class="agent-card-name">מומחה תקציב</div>
+            <ul class="agent-card-examples">
+              <li (click)="sendFromHelp('תעזור לי לבנות תקציב חודשי למשפחה עם הכנסה של 20,000 ש&quot;ח')">תקציב משפחתי</li>
+              <li (click)="sendFromHelp('איך לצאת מחובות בצורה מהירה ויעילה?')">תכנית יציאה מחובות</li>
+              <li (click)="sendFromHelp('כמה כסף צריך בקרן חירום ואיך לבנות אותה?')">בניית קרן חירום</li>
+            </ul>
+          </div>
+
+          <div class="agent-card" data-agent="general">
+            <div class="agent-card-icon">💼</div>
+            <div class="agent-card-name">יועץ כללי</div>
+            <ul class="agent-card-examples">
+              <li (click)="sendFromHelp('מה הצעדים הפיננסיים שצריך לעשות בגיל 30?')">מפת דרכים פיננסית</li>
+              <li (click)="sendFromHelp('מה ההבדל בין אינפלציה לריבית ואיך זה משפיע עלי?')">מושגים פיננסיים בסיסיים</li>
+              <li (click)="sendFromHelp('תסביר לי את כלל 50-30-20 לניהול כספים')">כלל 50-30-20</li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── POWER TIPS ── -->
+      <div class="help-section">
+        <h3 class="help-section-title">💡 שאלות שמפעילות מספר מומחים יחד</h3>
+        <div class="power-tips">
+          <div class="tip-card" (click)="sendFromHelp('אני בן 35, מרוויח 18,000 ש&quot;ח, יש לי חיסכון של 200,000 ש&quot;ח. רוצה לקנות דירה תוך 5 שנים ולפרוש בגיל 65. מה הדרך הטובה ביותר?')">
+            <span class="tip-icon">🔥</span>
+            <span class="tip-text">תכנון פיננסי מקיף — פנסיה + משכנתא + השקעות</span>
+            <span class="tip-agents">🏦 + 🏠 + 📈</span>
+          </div>
+          <div class="tip-card" (click)="sendFromHelp('מכרתי דירה ב-2.5 מיליון ש&quot;ח. איך לנהל את הכסף הזה — מה המיסים שאשלם, איפה להשקיע, ואיך זה ישפיע על הפנסיה שלי?')">
+            <span class="tip-icon">💰</span>
+            <span class="tip-text">ניהול כסף ממכירת דירה — מס + השקעות + פנסיה</span>
+            <span class="tip-agents">🧾 + 📈 + 🏦</span>
+          </div>
+          <div class="tip-card" (click)="sendFromHelp('אני עצמאי עם הכנסה לא יציבה של 10,000-25,000 ש&quot;ח. איך לנהל תקציב, מה לשלם בביטוח לאומי, ואיך לחסוך לפנסיה?')">
+            <span class="tip-icon">⚡</span>
+            <span class="tip-text">פיננסים לעצמאי — תקציב + מס + פנסיה</span>
+            <span class="tip-agents">📊 + 🧾 + 🏦</span>
+          </div>
+          <div class="tip-card" (click)="sendFromHelp('הבנק מציע לי משכנתא בריבית 5.2%. כמה שלם בסך הכל? האם כדאי לי מחזור? מה ההשפעה על ההשקעות שלי?')">
+            <span class="tip-icon">🎯</span>
+            <span class="tip-text">ניתוח משכנתא ומיחזור — השוואה + מחשבון + השקעות</span>
+            <span class="tip-agents">🏠 + 📈 + 💼</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── CAPABILITIES ── -->
+      <div class="help-section">
+        <h3 class="help-section-title">✨ יכולות ייחודיות</h3>
+        <div class="capabilities-grid">
+          <div class="cap-card">
+            <span class="cap-icon">🧮</span>
+            <span class="cap-title">נוסחאות מתמטיות</span>
+            <span class="cap-desc">חישובי ריבית דריבית, לוחות סילוקין, NPV ועוד — מוצגים בצורה ויזואלית</span>
+          </div>
+          <div class="cap-card">
+            <span class="cap-icon">📊</span>
+            <span class="cap-title">גרפים אינטראקטיביים</span>
+            <span class="cap-desc">גרפי קו, עמודות ועוגה שנוצרים בזמן אמת להמחשת הנתונים שלך</span>
+          </div>
+          <div class="cap-card">
+            <span class="cap-icon">📋</span>
+            <span class="cap-title">טבלאות השוואה</span>
+            <span class="cap-desc">השוואות מפורטות בין אפשרויות — מסלולי משכנתא, תיקי השקעות ועוד</span>
+          </div>
+          <div class="cap-card">
+            <span class="cap-icon">💾</span>
+            <span class="cap-title">היסטוריית שיחות</span>
+            <span class="cap-desc">שמירה אוטומטית של כל שיחה עם חיפוש, תיוג וסינון לפי נושא</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── CTA ── -->
+      <div class="help-cta">
+        <p class="help-cta-text">מוכן להתחיל? בחר שאלה מלמעלה או כתוב שלך</p>
+        <button class="help-cta-btn" (click)="sendFromHelp('שלום! ספר לי מה אתה יכול לעשות בשבילי')">
+          🚀 התחל עכשיו — דוגמה מהירה
+        </button>
+        <button class="help-close-link" (click)="toggleHelpModal()">סגור ועבור לצ\'אט</button>
+      </div>
+
+    </div>
+  </div>
+
 </div>

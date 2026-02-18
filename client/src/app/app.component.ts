@@ -39,6 +39,17 @@ export class AppComponent implements AfterViewInit, OnDestroy, OnInit {
   editingMessageText = '';
   editingMessageId = '';
 
+  // 🆕 Help modal
+  showHelpModal = false;
+
+  toggleHelpModal() { this.showHelpModal = !this.showHelpModal; }
+
+  sendFromHelp(question: string) {
+    this.showHelpModal = false;
+    this.userInput = question;
+    setTimeout(() => this.sendMessage(), 100);
+  }
+
   // 🆕 MongoDB Integration
   showConversationDialog = false;
   currentConversationTitle = '';
