@@ -1,0 +1,251 @@
+<div class="app-container" dir="rtl">
+  <h1>🚀 יועץ פיננסי חכם</h1>
+
+  <!-- <div class="debug-info" style="background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px;">
+    <h5>🔍 מידע דיבוג:</h5>
+    <p>כמות שיחות: {{ conversations?.length || 0 }}</p>
+    <p>טוען: {{ loading }}</p>
+    <p>שיחה נוכחית: {{ currentSessionId }}</p>
+    
+    הצגת השיחה הראשונה לדיבוג 
+    <div *ngIf="conversations && conversations.length > 0">
+      <h6>📋 השיחה הראשונה:</h6>
+      <pre>{{ conversations[0] | json }}</pre>
+    </div>
+    
+    <div *ngIf="!conversations || conversations.length === 0">
+      <p style="color: red;">❌ אין שיחות להצגה</p>
+    </div>
+  </div> -->
+
+  <div *ngIf="loading" class="loading">טוען שיחות...</div>
+
+  <!-- <div class="conversations-list" *ngIf="conversations && conversations.length > 0">
+    <div *ngFor="let conv of conversations" class="conversation-item" (click)="loadConversation(conv.sessionId)"
+      [class.active]="currentSessionId === conv.sessionId">
+
+      <div class="conversation-main">
+        <div class="conversation-header">
+          <div class="title-section">
+            <span class="category-icon">{{getCategoryIcon(conv.category)}}</span>
+            <h4 class="conversation-title" [title]="conv.title">{{conv.title}}</h4>
+            <span *ngIf="conv.isFavorite" class="favorite-star">⭐</span>
+          </div>
+          <div class="conversation-meta">
+            <span class="message-count">{{conv.messageCount}} הודעות</span>
+            <span class="last-activity">{{formatTimeAgo(conv.lastActivity)}}</span>
+          </div>
+        </div>
+
+        <div class="conversation-description" *ngIf="conv.description" [title]="conv.description">
+          {{conv.description}}
+        </div>
+
+        <div class="conversation-tags" *ngIf="conv.tags && conv.tags.length > 0">
+          <span *ngFor="let tag of conv.tags" class="tag">{{tag}}</span>
+        </div>
+
+        <div class="conversation-performance" *ngIf="conv.performance">
+          <div class="perf-item" *ngIf="conv.performance.mathFormulas > 0">
+            <span class="perf-icon">🧮</span>
+            <span>{{conv.performance.mathFormulas}} נוסחאות</span>
+          </div>
+          <div class="perf-item" *ngIf="conv.performance.charts > 0">
+            <span class="perf-icon">📊</span>
+            <span>{{conv.performance.charts}} גרפים</span>
+          </div>
+          <div class="perf-item" *ngIf="conv.performance.tables > 0">
+            <span class="perf-icon">📋</span>
+            <span>{{conv.performance.tables}} טבלאות</span>
+          </div>
+          <div class="perf-item" *ngIf="conv.performance.responseTime">
+            <span class="perf-icon">⚡</span>
+            <span>{{conv.performance.responseTime}}ms</span>
+          </div>
+        </div>
+
+        <div class="conversation-dates">
+          <span class="created-date">נוצר: {{formatDate(conv.createdAt)}}</span>
+        </div>
+      </div>
+    </div>
+  </div> -->
+
+  <!-- Action Buttons -->
+  <div class="action-buttons">
+    <!-- 🆕 New Conversation Management Buttons -->
+    <button class="action-btn conversation-btn" (click)="openConversationDialog()" style="background: #9c27b0;">
+      💾 ניהול שיחות
+    </button>
+
+    <button class="action-btn save-btn" (click)="saveConversationManually()" style="background: #4caf50;">
+      💾 שמור שיחה
+    </button>
+
+    <button class="action-btn new-conversation-btn" (click)="startNewConversation()" style="background: #00bcd4;">
+      🆕 שיחה חדשה
+    </button>
+
+    <button class="action-btn delete-conversation-btn" (click)="clearConversation()">
+      🗑️ מחק שיחה נוכחית
+    </button>
+
+    <!-- <button class="action-btn" (click)="exportConversation()">
+      💾 יצוא JSON
+    </button> -->
+    <!-- <button class="action-btn" (click)="downloadPDF()">
+      📄 יצוא PDF
+    </button> -->
+    <button class="action-btn" (click)="downloadHTML()">
+      💾 שמור HTML
+    </button>
+    <!-- Scroll to Bottom Button -->
+    <button class="scroll-to-bottom" (click)="scrollToBottom()" *ngIf="conversation.length > 3">
+      ⬇️
+    </button>
+    <!-- <button class="action-btn" (click)="getServerPerformanceStats()" style="background: #2196f3;">
+      📊 סטטיסטיקות שרת
+    </button> -->
+    <!--<button class="action-btn" (click)="testLatexRendering()">
+      🧮 בדיקת LaTeX
+    </button>
+    <button class="action-btn" (click)="checkMathJaxStatus()">
+      ⚙️ סטטוס MathJax
+    </button>
+    <button class="action-btn" (click)="debugLatexContent()">
+      🔍 דיבוג תוכן
+    </button>
+    <button class="action-btn" (click)="reloadMathJax()">
+      🔄 טען MathJax מחדש
+    </button>-->
+    <!-- <button class="action-btn" (click)="forceRenderMathJax()" style="background: #ff6b6b;">
+      🚨 כפה רנדור
+    </button> -->
+    <!-- <button class="action-btn" (click)="debugTableStyling()" style="background: #ff9800;">
+      📊 דיבוג טבלאות
+    </button> -->
+    <!-- <button class="action-btn" (click)="forceTableStyling()" style="background: #9c27b0;">
+      🎨 כפה עיצוב טבלאות
+    </button> -->
+  </div>
+
+  <!-- Quick Messages -->
+  <div class="quick-messages">
+    <button *ngFor="let quickMsg of getQuickMessages()" class="quick-message-btn" (click)="addQuickMessage(quickMsg)">
+      {{ quickMsg }}
+    </button>
+  </div>
+  <div class="chat-wrapper">
+    <div class="chat-box" #chatBox>
+      <div *ngFor="let msg of conversation; let i = index" class="message" [ngClass]="msg.sender"
+        [style.animation-delay]="(i * 0.1) + 's'">
+
+        <div *ngIf="msg.sender === 'user'" class="user-message-content">
+          {{ msg.message }}
+          <div class="message-timestamp">
+            {{ getMessageTime(msg.timestamp) }}
+          </div>
+
+          <!-- כפתורי עריכה ומחיקה - רק להודעה האחרונה -->
+          <div *ngIf="isLastUserMessage(msg.id) && canEditOrDeleteLastMessage()" class="message-actions">
+            <button class="action-icon-btn edit-btn" (click)="editLastUserMessage()" title="ערוך הודעה">
+              ✏️
+            </button>
+            <button class="action-icon-btn delete-btn" (click)="deleteLastUserMessage()" title="מחק הודעה">
+              🗑️
+            </button>
+          </div>
+        </div>
+
+        <!-- מצב עריכה -->
+        <div *ngIf="isEditingLastMessage && editingMessageId === msg.id" class="user-message-edit">
+          <div class="edit-container">
+            <textarea [(ngModel)]="editingMessageText" (keydown)="onEditKeydown($event)" (input)="autoGrowEdit($event)"
+              class="edit-message-textarea" placeholder="ערוך את ההודעה שלך..." rows="3">
+              </textarea>
+
+            <div class="edit-actions">
+              <button class="edit-action-btn save-btn" (click)="saveEditedMessage()"
+                [disabled]="!editingMessageText.trim()">
+                💾 שמור ושלח מחדש
+              </button>
+              <button class="edit-action-btn cancel-btn" (click)="cancelEditMessage()">
+                ❌ ביטול
+              </button>
+            </div>
+
+            <div class="edit-help">
+              💡 Enter = שמור | Shift+Enter = שורה חדשה | Esc = ביטול
+            </div>
+          </div>
+        </div>
+
+
+        <div *ngIf="msg.sender === 'ai'" class="ai-message-content">
+          <!-- תגיות מומחים -->
+          <div *ngIf="msg.agentsUsed && msg.agentsUsed.length > 0" class="agent-badges-row">
+            <span class="agent-badge" *ngFor="let agent of msg.agentsUsed"
+                  [attr.data-agent]="agent.agent_id">
+              {{ agent.agent_icon }} {{ agent.agent_name }}
+            </span>
+            <span *ngIf="msg.mode === 'multi'" class="agent-badge agent-badge--synthesis">
+              🔗 ניתוח משולב
+            </span>
+          </div>
+          <div [innerHTML]="msg.message"></div>
+          <div class="message-timestamp">
+            {{ getMessageTime(msg.timestamp) }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Typing Indicator -->
+      <div *ngIf="isTyping && !loading" class="typing-indicator">
+        <span style="color: #64b5f6;">💭 אתה כותב...</span>
+      </div>
+
+      <!-- Loading -->
+      <div *ngIf="loading" class="loading">
+        <div class="typing-dots">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>
+        <span class="loading-text">מתייעץ עם המומחים...</span>
+      </div>
+
+      
+    </div>
+  </div>
+
+  <div class="input-box">
+    <textarea [(ngModel)]="userInput" placeholder="💭 כתוב כאן את השאלה הפיננסית שלך..."
+      (keydown.control.enter)="sendMessage()" (keydown.meta.enter)="sendMessage()" (keydown.escape)="userInput = ''"
+      (input)="autoGrow($event); onTyping()" rows="1" style="overflow:hidden; resize:none;" maxlength="1000"
+      #messageInput>
+    </textarea>
+
+    <button (click)="sendMessage()" [disabled]="loading || !userInput.trim()" class="send-button">
+      <span *ngIf="!loading">📤 שלח</span>
+      <span *ngIf="loading">
+        <div class="typing-dots">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>
+      </span>
+    </button>
+  </div>
+
+  <div class="input-footer">
+    <span class="char-counter" [class.warning]="userInput.length > 800">
+      {{ userInput.length }}/1000
+    </span>
+    <span class="tip">💡 Enter=שלח | Shift+Enter=שורה חדשה | Ctrl+Enter=שלח מהיר</span>
+  </div>
+
+  <!-- 🆕 Conversation Dialog Component -->
+  <app-conversation-dialog [isOpen]="showConversationDialog" (conversationSelected)="onConversationSelected($event)"
+    (closeEvent)="closeConversationDialog()">
+  </app-conversation-dialog>
+</div>

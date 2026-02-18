@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Environment variables (secrets!)
+server/.env
+.env
+*.env
+
+# Angular build output
+client/dist/
+client/.angular/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+*.bak
+
+# Backup/archive files
+*.zip
+*.rar
+*.7z
+
+# Claude Code IDE files
+.claude/
+
+# Backup component copies
+*copy.ts
+*copy.css
+*copy.html
+*copy.scss

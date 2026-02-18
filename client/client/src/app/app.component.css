@@ -1,0 +1,2113 @@
+@import url('https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&display=swap');
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: linear-gradient(135deg,#0f0f23,#1a1a2e,#16213e 50%,#0f0f23);
+  background-size: 400% 400%;
+  background-attachment: fixed;
+  animation: gradientShift 15s ease infinite;
+  color: #e0e6ed;
+  font-family: 'Assistant', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  direction: rtl;
+  min-height: 100vh;
+  overflow-x: hidden;
+  font-size: larger;
+}
+
+/* וידוא שכל האלמנטים ברמה הגבוהה מקבלים את הרקע הנכון */
+:host {
+  display: block;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 25%, #16213e 50%, #0f0f23 100%);
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+}
+
+app-root {
+  display: block;
+  min-height: 100vh;
+  
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+}
+
+/* אלמנטים נוספים שיכולים להפריע */
+div[ng-version] {
+  background: transparent !important;
+}
+
+router-outlet + * {
+  background: transparent !important;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.app-container {
+  padding: 10px;
+  max-width: 1900px;
+  margin: 0 auto;
+  height: 100vh; /* 🔥 שינוי מ-min-height */
+  display: flex; /* 🔥 הוספה */
+  flex-direction: column;
+  position: relative;
+}
+
+.app-container::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(120, 219, 226, 0.1) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+h1 {
+  text-align: center;
+  font-size: 2.2rem; /* 🔥 קטן יותר */
+  font-weight: 700;
+  margin: 10px 0 15px 0; /* 🔥 שינוי מ-margin-bottom: 30px */
+  background: linear-gradient(45deg, #64b5f6, #42a5f5, #29b6f6, #26c6da);
+  background-size: 400% 400%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradientShift 8s ease infinite;
+  text-shadow: 0 0 30px rgba(100, 181, 246, 0.3);
+  position: relative;
+  flex-shrink: 0; /* 🔥 הוספה בסוף */
+}
+
+h1::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 3px;
+  background: linear-gradient(90deg, #64b5f6, #26c6da);
+  border-radius: 2px;
+  box-shadow: 0 0 20px rgba(100, 181, 246, 0.5);
+}
+
+.chat-box {
+  flex: 1;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 20px;
+  border-radius: 20px;
+  background: rgba(30, 30, 30, 0.8);
+  backdrop-filter: blur(20px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-shadow: 
+    0 20px 40px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  position: relative;
+  max-height: none; /* 🔥 הסר הגבלת גובה */
+  min-height: 300px;
+}
+
+.chat-box::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 20px;
+  pointer-events: none;
+}
+
+.chat-box::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-box::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+.chat-box::-webkit-scrollbar-thumb {
+  background: linear-gradient(45deg, #64b5f6, #26c6da);
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(100, 181, 246, 0.3);
+}
+
+.message {
+  margin-bottom: 15px;
+  animation: messageSlide 0.5s ease-out;
+}
+
+@keyframes messageSlide {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message.user {
+  text-align: right;
+  background: linear-gradient(135deg, #00c853 0%, #2e7d32 50%, #1b5e20 100%);
+  color: #e8f5e8;
+  box-shadow: 
+    0 4px 15px rgba(0, 200, 83, 0.4),
+    0 1px 3px rgba(0, 0, 0, 0.2);
+  padding: 12px 18px;
+  border-radius: 18px 18px 5px 18px;
+  display: inline-block;
+  max-width: 80%;
+  margin-left: auto;
+  position: relative;
+  font-weight: 500;
+  margin-right: 40px;
+}
+
+.message.user::before {
+  content: '👤';
+  position: absolute;
+  right: -50px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.2em;
+  background: linear-gradient(135deg, #42a5f5, #29b6f6);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(66, 165, 245, 0.3);
+}
+
+.message.ai {
+  text-align: right;
+  background: linear-gradient(135deg, rgba(42, 42, 42, 0.9) 0%, rgba(33, 33, 33, 0.9) 100%);
+  color: #e0e6ed;
+  padding: 15px 20px;
+  border-radius: 18px 18px 18px 5px;
+  box-shadow: 
+    0 8px 25px rgba(0, 0, 0, 0.3),
+    0 3px 10px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+  margin-right: 40px;
+  margin-left: 40px;
+}
+
+.message.ai::before {
+  content: '🤖';
+  position: absolute;
+  left: -50px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.2em;
+  background: linear-gradient(135deg, #26c6da, #00acc1);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(38, 198, 218, 0.3);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 4px 10px rgba(38, 198, 218, 0.3); }
+  50% { box-shadow: 0 4px 20px rgba(38, 198, 218, 0.6); }
+}
+
+.message.ai h1,
+.message.ai h2,
+.message.ai h3 {
+  margin: 16px 0 8px;
+  font-weight: 600;
+  color: #64b5f6;
+  text-shadow: 0 0 10px rgba(100, 181, 246, 0.3);
+}
+
+.message.ai ul,
+.message.ai ol {
+  margin: 12px 0;
+  padding-right: 20px;
+}
+
+.message.ai li {
+  margin-bottom: 5px;
+  position: relative;
+}
+
+.message.ai li::marker {
+  color: #26c6da;
+}
+
+.message.ai strong {
+  color: #64b5f6;
+  font-weight: 600;
+  text-shadow: 0 0 10px rgba(100, 181, 246, 0.2);
+}
+
+.message.ai table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 15px 0;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.message.ai th,
+.message.ai td {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 12px;
+  text-align: right;
+}
+
+.message.ai th {
+  background: linear-gradient(135deg, #1976d2, #1565c0);
+  color: white;
+  font-weight: 600;
+}
+
+.message.ai td {
+  background: rgba(42, 42, 42, 0.5);
+}
+
+.message.ai pre,
+.message.ai code {
+  background: linear-gradient(135deg, #2e2e2e 0%, #3a3a3a 100%);
+  color: #ffca28;
+  padding: 8px 12px;
+  border-radius: 8px;
+  direction: ltr;
+  font-family: 'Fira Code', 'Monaco', 'Consolas', monospace;
+  border: 1px solid rgba(255, 202, 40, 0.2);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.message.ai pre {
+  padding: 15px;
+  overflow-x: auto;
+  position: relative;
+}
+
+.message.ai pre::before {
+  content: '</>';
+  position: absolute;
+  top: 5px;
+  left: 10px;
+  color: #64b5f6;
+  font-size: 0.8em;
+  font-weight: bold;
+}
+
+.input-box {
+  display: flex;
+  gap: 15px;
+  align-items: flex-end;
+  background: rgba(30, 30, 30, 0.8);
+  backdrop-filter: blur(20px);
+  padding: 15px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    0 10px 30px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  flex-shrink: 0; /* 🔥 הוספה - לא יתכווץ */
+  margin-top: auto; /* 🔥 הוספה - נדחק לתחתית */
+}
+
+textarea {
+  flex: 1;
+  padding: 15px 20px;
+  background: rgba(42, 42, 42, 0.8);
+  color: #e0e6ed;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 15px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 50px;
+  max-height: 120px;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+textarea:focus {
+  outline: none;
+  border-color: #64b5f6;
+  box-shadow: 
+    0 0 20px rgba(100, 181, 246, 0.3),
+    inset 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: rgba(42, 42, 42, 0.9);
+}
+
+textarea::placeholder {
+  color: rgba(224, 230, 237, 0.6);
+}
+
+button {
+  background: linear-gradient(135deg, #1976d2 0%, #1565c0 50%, #0d47a1 100%);
+  color: white;
+  border: none;
+  padding: 15px 25px;
+  border-radius: 15px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 
+    0 6px 20px rgba(25, 118, 210, 0.3),
+    0 2px 5px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 8px 25px rgba(25, 118, 210, 0.4),
+    0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+button:hover::before {
+  left: 100%;
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+.loading {
+  text-align: center;
+  margin-top: 15px;
+  font-style: italic;
+  color: #64b5f6;
+  font-size: 16px;
+  animation: loadingPulse 1.5s ease-in-out infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.loading::before {
+  content: '';
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(100, 181, 246, 0.3);
+  border-top: 2px solid #64b5f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes loadingPulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* עיצוב נוסחאות MathJax משופר */
+mjx-container[jax="SVG"] {
+  direction: ltr !important;
+  text-align: center !important;
+  display: block;
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(26, 26, 46, 0.9) 0%, rgba(22, 33, 62, 0.9) 100%);
+  border-radius: 15px;
+  margin: 20px 0;
+  overflow-x: auto;
+  border: 2px solid rgba(100, 181, 246, 0.4);
+  box-shadow: 
+    0 10px 30px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 0 20px rgba(100, 181, 246, 0.2);
+  backdrop-filter: blur(15px);
+  position: relative;
+}
+
+mjx-container[jax="SVG"]::before {
+  content: '∑ נוסחה מתמטית';
+  position: absolute;
+  top: 5px;
+  right: 10px;
+  font-size: 11px;
+  color: rgba(100, 181, 246, 0.7);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+mjx-container[jax="SVG"] svg {
+  color: #ffcc80 !important;
+  filter: brightness(1.1) contrast(1.1);
+}
+
+/* אלטרנטיבה ל-CHTML אם נדרש */
+mjx-container[jax="CHTML"] {
+  direction: ltr !important;
+  text-align: center !important;
+  display: block;
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(26, 26, 46, 0.9) 0%, rgba(22, 33, 62, 0.9) 100%);
+  border-radius: 15px;
+  margin: 20px 0;
+  overflow-x: auto;
+  font-size: 1.2em;
+  border: 2px solid rgba(100, 181, 246, 0.4);
+  box-shadow: 
+    0 10px 30px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 0 20px rgba(100, 181, 246, 0.2);
+  backdrop-filter: blur(15px);
+  position: relative;
+}
+
+mjx-container[jax="CHTML"]::before {
+  content: '∑ נוסחה מתמטית';
+  position: absolute;
+  top: 5px;
+  right: 10px;
+  font-size: 11px;
+  color: rgba(100, 181, 246, 0.7);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+mjx-container[jax="CHTML"] mjx-mstyle {
+  font-family: "Times New Roman", "Computer Modern", serif !important;
+  color: #ffcc80 !important;
+  font-weight: 500;
+}
+
+/* הצגת נוסחאות inline */
+mjx-container[jax="SVG"][display="false"],
+mjx-container[jax="CHTML"][display="false"] {
+  display: inline !important;
+  padding: 5px 8px;
+  margin: 0 4px;
+  background: rgba(26, 26, 46, 0.6);
+  border-radius: 6px;
+  border: 1px solid rgba(100, 181, 246, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+mjx-container[jax="SVG"][display="false"]::before,
+mjx-container[jax="CHTML"][display="false"]::before {
+  display: none;
+}
+
+/* הוספת אנימציה לנוסחאות */
+mjx-container {
+  animation: mathFadeIn 0.6s ease-out;
+}
+
+@keyframes mathFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* אנימציות נוספות */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.app-container > * {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .app-container {
+  padding: 5px;
+  height: 100vh;
+}
+
+h1 {
+  font-size: 1.8rem;
+  margin: 5px 0 10px 0;
+}
+
+.chat-box {
+  max-height: 55vh; /* קצת פחות במובייל */
+  min-height: 250px;
+  padding: 15px;
+}
+
+.action-buttons {
+  gap: 5px;
+  margin: 8px 0;
+}
+
+.quick-messages {
+  margin: 8px 0;
+  gap: 4px;
+}
+  
+  .message.user,
+  .message.ai {
+    max-width: 95%;
+  }
+  
+  .input-box {
+    padding: 10px;
+    gap: 10px;
+  }
+  
+  textarea {
+    padding: 12px 15px;
+    font-size: 14px;
+  }
+  
+  button {
+    padding: 12px 20px;
+    font-size: 14px;
+  }
+}
+
+/* אפקטים מתקדמים */
+.message.ai:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 12px 35px rgba(0, 0, 0, 0.4),
+    0 5px 15px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.message.user:hover {
+  transform: translateY(-1px);
+  box-shadow: 
+    0 6px 20px rgba(25, 118, 210, 0.4),
+    0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Input Footer */
+.input-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  padding: 0 5px;
+  font-size: 12px;
+  color: rgba(224, 230, 237, 0.6);
+  flex-shrink: 0; /* 🔥 הוספה - לא יתכווץ */
+}
+
+.char-counter {
+  font-family: monospace;
+  transition: color 0.3s ease;
+}
+
+.char-counter.warning {
+  color: #ff6b6b;
+  font-weight: bold;
+}
+
+.tip {
+  font-style: italic;
+}
+
+/* Enhanced Button States */
+button:disabled {
+  background: linear-gradient(135deg, #424242 0%, #616161 100%);
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+button:disabled:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.send-button {
+  min-width: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+}
+
+/* Quick Messages */
+.quick-messages {
+  justify-content: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0;
+  padding: 0 5px;
+  flex-shrink: 0; /* 🔥 הוספה - לא יתכווץ */
+}
+
+.quick-message-btn {
+  background: rgba(42, 42, 42, 0.8);
+  color: #64b5f6;
+  border: 1px solid rgba(100, 181, 246, 0.3);
+  padding: 6px 12px;
+  border-radius: 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.quick-message-btn:hover {
+  background: rgba(100, 181, 246, 0.2);
+  border-color: #64b5f6;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(100, 181, 246, 0.2);
+}
+
+/* Enhanced Tables - עיצוב מתקדם לטבלאות עם ספציפיות גבוהה */
+.message.ai .financial-table,
+.message.ai .styled-table,
+.message.ai table.financial-table,
+.message.ai table.styled-table,
+.ai-message-content .financial-table,
+.ai-message-content .styled-table,
+.ai-message-content table.financial-table,
+.ai-message-content table.styled-table,
+.responsive-table,
+table.financial-table,
+table.styled-table,
+table[style] {
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3) !important;
+  background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%) !important;
+  margin: 20px 0 !important;
+  width: 100% !important;
+  border-collapse: collapse !important;
+  border: 2px solid rgba(100, 181, 246, 0.4) !important;
+}
+
+.message.ai .financial-table th,
+.message.ai .styled-table th,
+.message.ai table.financial-table th,
+.message.ai table.styled-table th,
+.ai-message-content .financial-table th,
+.ai-message-content .styled-table th,
+.ai-message-content table.financial-table th,
+.ai-message-content table.styled-table th,
+.responsive-table th,
+table.financial-table th,
+table.styled-table th,
+table[style] th {
+  background: linear-gradient(135deg, #64b5f6, #42a5f5) !important;
+  color: white !important;
+  font-weight: 700 !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+  border: none !important;
+  padding: 18px 15px !important;
+  font-size: 16px !important;
+  letter-spacing: 1px !important;
+  text-align: center !important;
+  text-transform: uppercase !important;
+}
+
+.message.ai .financial-table td,
+.message.ai .styled-table td,
+.message.ai table.financial-table td,
+.message.ai table.styled-table td,
+.ai-message-content .financial-table td,
+.ai-message-content .styled-table td,
+.ai-message-content table.financial-table td,
+.ai-message-content table.styled-table td,
+.responsive-table td,
+table.financial-table td,
+table.styled-table td,
+table[style] td {
+  border: 1px solid rgba(100, 181, 246, 0.3) !important;
+  background: rgba(26, 26, 26, 0.9) !important;
+  color: #e0e0e0 !important;
+  padding: 15px !important;
+  transition: all 0.3s ease !important;
+  font-size: 15px !important;
+  text-align: center !important;
+}
+
+.message.ai .financial-table tr:hover td,
+.message.ai .styled-table tr:hover td,
+.message.ai table.financial-table tr:hover td,
+.message.ai table.styled-table tr:hover td,
+.ai-message-content .financial-table tr:hover td,
+.ai-message-content .styled-table tr:hover td,
+.ai-message-content table.financial-table tr:hover td,
+.ai-message-content table.styled-table tr:hover td,
+.responsive-table tr:hover td,
+table.financial-table tr:hover td,
+table.styled-table tr:hover td,
+table[style] tr:hover td {
+  background: rgba(100, 181, 246, 0.2) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(100, 181, 246, 0.3) !important;
+}
+
+/* סטיילינג לטבלאות עם מחירים/מספרים */
+.numeric-cell,
+td:contains('₪'),
+td:contains('%'),
+td:contains('ש"ח'),
+table td:contains('₪'),
+table td:contains('%'),
+table td:contains('ש"ח') {
+  font-family: 'Monaco', 'Consolas', monospace !important;
+  font-weight: 600 !important;
+  color: #ffcc80 !important;
+  text-shadow: 0 0 10px rgba(255, 204, 128, 0.3) !important;
+}
+
+/* דריסת כל סטיילים inline של טבלאות */
+.message.ai table,
+.message.ai table[style],
+.ai-message-content table,
+.ai-message-content table[style] {
+  background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%) !important;
+  color: #e0e0e0 !important;
+  border-radius: 15px !important;
+  overflow: hidden !important;
+  box-shadow: 
+    0 15px 35px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 0 20px rgba(100, 181, 246, 0.2) !important;
+  margin: 25px 0 !important;
+  border: 2px solid rgba(100, 181, 246, 0.4) !important;
+  width: 100% !important;
+  border-collapse: collapse !important;
+}
+
+.message.ai table th,
+.message.ai table[style] th,
+.ai-message-content table th,
+.ai-message-content table[style] th {
+  background: linear-gradient(135deg, #64b5f6, #42a5f5) !important;
+  color: white !important;
+  font-weight: 700 !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+  border: none !important;
+  padding: 18px 15px !important;
+  font-size: 16px !important;
+  letter-spacing: 1px !important;
+  text-align: center !important;
+  text-transform: uppercase !important;
+}
+
+.message.ai table td,
+.message.ai table[style] td,
+.ai-message-content table td,
+.ai-message-content table[style] td {
+  border: 1px solid rgba(100, 181, 246, 0.3) !important;
+  background: rgba(26, 26, 26, 0.9) !important;
+  color: #e0e0e0 !important;
+  padding: 15px !important;
+  transition: all 0.3s ease !important;
+  font-size: 15px !important;
+  text-align: center !important;
+}
+
+.message.ai table tr:hover td,
+.message.ai table[style] tr:hover td,
+.ai-message-content table tr:hover td,
+.ai-message-content table[style] tr:hover td {
+  background: rgba(100, 181, 246, 0.2) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(100, 181, 246, 0.3) !important;
+}
+
+/* טבלאות פיננסיות מיוחדות */
+.financial-table {
+  background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%) !important;
+  border-radius: 15px !important;
+  overflow: hidden !important;
+  box-shadow: 
+    0 15px 35px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  margin: 25px 0 !important;
+  border: 2px solid rgba(100, 181, 246, 0.3) !important;
+}
+
+.financial-table th {
+  background: linear-gradient(135deg, #64b5f6, #42a5f5) !important;
+  color: white !important;
+  font-weight: 700 !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+  border: none !important;
+  padding: 18px 15px !important;
+  font-size: 16px !important;
+  letter-spacing: 1px !important;
+}
+
+.financial-table td {
+  border: 1px solid rgba(100, 181, 246, 0.2) !important;
+  background: rgba(26, 26, 26, 0.9) !important;
+  padding: 15px !important;
+  transition: all 0.3s ease !important;
+  font-size: 15px !important;
+}
+
+.financial-table tr:hover td {
+  background: rgba(100, 181, 246, 0.15) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(100, 181, 246, 0.2) !important;
+}
+
+/* Chart containers */
+.chart-container {
+  background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%) !important;
+  border-radius: 20px !important;
+  padding: 25px !important;
+  margin: 30px 0 !important;
+  border: 2px solid rgba(100, 181, 246, 0.3) !important;
+  box-shadow: 
+    0 20px 40px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+.financial-chart {
+  border-radius: 10px !important;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Enhanced Lists */
+.enhanced-li {
+  position: relative;
+  padding-right: 10px;
+}
+
+.enhanced-li::before {
+  content: '▶';
+  position: absolute;
+  right: -15px;
+  color: #26c6da;
+  font-size: 0.8em;
+  top: 2px;
+}
+
+/* Action Buttons Container */
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  margin: 10px 0;
+  justify-content: center;
+  flex-wrap: wrap;
+  flex-shrink: 0; /* 🔥 הוספה - לא יתכווץ */
+}
+
+.action-btn {
+  background: rgba(42, 42, 42, 0.8);
+  color: #e0e6ed;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 8px 15px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.action-btn:hover {
+  background: rgba(100, 181, 246, 0.2);
+  border-color: #64b5f6;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(100, 181, 246, 0.3);
+}
+
+/* Connection Status */
+.connection-status {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  z-index: 1000;
+  transition: all 0.3s ease;
+}
+
+.connection-status.online {
+  background: linear-gradient(135deg, #4caf50, #66bb6a);
+  color: white;
+  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+}
+
+.connection-status.offline {
+  background: linear-gradient(135deg, #f44336, #ef5350);
+  color: white;
+  box-shadow: 0 4px 15px rgba(244, 67, 54, 0.3);
+  animation: pulse 1s infinite;
+}
+
+/* Message Timestamps */
+.message-timestamp {
+  font-size: 10px;
+  color: rgba(224, 230, 237, 0.5);
+  margin-top: 5px;
+  text-align: left;
+  font-style: italic;
+}
+
+.message.user .message-timestamp {
+  text-align: right;
+}
+
+/* תיקון כפתור Scroll to Bottom - יהיה קבוע במסך */
+.scroll-to-bottom {
+  position: fixed !important; /* 🔥 וודא שזה fixed */
+  bottom: 100px !important; /* 🔥 רחק יותר מתיבת הקלט */
+  left: 20px; /* שמאל כי זה RTL */
+  background: linear-gradient(135deg, #1976d2, #1565c0);
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  box-shadow: 0 6px 20px rgba(25, 118, 210, 0.4);
+  transition: all 0.3s ease;
+  z-index: 9999 !important; /* 🔥 z-index גבוה יותר */
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+}
+
+.scroll-to-bottom:hover {
+  background: linear-gradient(135deg, #1565c0, #0d47a1);
+  transform: translateY(-3px) scale(1.1);
+  box-shadow: 0 8px 25px rgba(25, 118, 210, 0.6);
+}
+
+.scroll-to-bottom:active {
+  transform: translateY(-1px) scale(1.05);
+  box-shadow: 0 4px 15px rgba(25, 118, 210, 0.4);
+}
+
+/* אנימציה של הופעה/היעלמות */
+.scroll-to-bottom {
+  opacity: 0.9;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8) translateY(20px);
+  }
+  to {
+    opacity: 0.9;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* עיצוב נוסף לנייד */
+@media (max-width: 768px) {
+  .scroll-to-bottom {
+    bottom: 90px !important; /* 🔥 במובייל קרוב יותר */
+    left: 15px !important;
+    width: 45px !important;
+    height: 45px !important;
+    font-size: 16px !important;
+  }
+}
+
+/* אפקט דופק (pulse) כשיש הודעות חדשות */
+.scroll-to-bottom.has-new-messages {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 6px 20px rgba(25, 118, 210, 0.4);
+  }
+  50% {
+    box-shadow: 0 6px 20px rgba(25, 118, 210, 0.8), 0 0 30px rgba(25, 118, 210, 0.5);
+  }
+  100% {
+    box-shadow: 0 6px 20px rgba(25, 118, 210, 0.4);
+  }
+}
+
+/* Advanced Loading Animation */
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 10px;
+  margin: 10px 0;
+}
+
+.typing-dots {
+  display: flex;
+  gap: 3px;
+}
+
+.typing-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #64b5f6;
+  animation: typingBounce 1.4s infinite ease-in-out both;
+}
+
+.typing-dot:nth-child(1) { animation-delay: -0.32s; }
+.typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes typingBounce {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* 🎯 תיקון רספונסיבי לגרפים זה לצד זה */
+.charts-container {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+  margin: 30px 0;
+  flex-wrap: wrap; /* חשוב! */
+  justify-content: space-between;
+}
+
+.chart-wrapper {
+  flex: 1;
+  min-width: 300px; /* רוחב מינימלי */
+  max-width: calc(50% - 10px); /* מקסימום חצי הרוחב פחות הרווח */
+  background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+  border-radius: 15px;
+  padding: 20px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+  border: 2px solid rgba(100, 181, 246, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.chart-canvas {
+    width: 100% !important;
+    height: auto !important;
+    max-height: 400px;
+}
+
+/* Enhanced Mobile Responsiveness */
+@media (max-width: 480px) {
+  .quick-messages {
+    display: none;
+  }
+  
+  .action-buttons {
+    gap: 5px;
+  }
+  
+  .action-btn {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+  
+  .connection-status {
+    position: relative;
+    top: auto;
+    left: auto;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+  
+  .message.ai::before,
+  .message.user::before {
+    display: none;
+  }
+  
+  .message.ai {
+    margin-right: 0;
+  }
+
+  .financial-chart,
+  canvas[id*="chart"] {
+    height: 280px !important;
+    max-height: 280px !important;
+    min-height: 280px !important;
+  }
+  
+
+  .chart-wrapper {
+    height: 320px !important;
+    min-height: 320px !important;
+    max-height: 320px !important;
+    padding: 10px !important;
+  }
+}
+
+/* CSS Override עם ספציפיות מקסימלית לטבלאות */
+.chat-box .message.ai table.financial-table,
+.chat-box .message.ai table.styled-table,
+.chat-box .ai-message-content table.financial-table,
+.chat-box .ai-message-content table.styled-table {
+  background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%) !important;
+  border: 2px solid #64b5f6 !important;
+  border-radius: 15px !important;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), 0 0 20px rgba(100, 181, 246, 0.3) !important;
+  margin: 25px 0 !important;
+}
+
+.chat-box .message.ai table.financial-table th,
+.chat-box .message.ai table.styled-table th,
+.chat-box .ai-message-content table.financial-table th,
+.chat-box .ai-message-content table.styled-table th {
+  background: linear-gradient(135deg, #64b5f6 0%, #42a5f5 100%) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5) !important;
+  padding: 20px 15px !important;
+  border: none !important;
+}
+
+.chat-box .message.ai table.financial-table td,
+.chat-box .message.ai table.styled-table td,
+.chat-box .ai-message-content table.financial-table td,
+.chat-box .ai-message-content table.styled-table td {
+  background: rgba(26, 26, 26, 0.95) !important;
+  color: #e0e0e0 !important;
+  border: 1px solid rgba(100, 181, 246, 0.4) !important;
+  padding: 16px !important;
+}
+
+.chat-box .message.ai table.financial-table tr:hover td,
+.chat-box .message.ai table.styled-table tr:hover td,
+.chat-box .ai-message-content table.financial-table tr:hover td,
+.chat-box .ai-message-content table.styled-table tr:hover td {
+  background: rgba(100, 181, 246, 0.25) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 15px rgba(100, 181, 246, 0.4) !important;
+}
+
+/* 🆕 Conversation Status Bar */
+.conversation-status-bar {
+  background: linear-gradient(135deg, rgba(42, 42, 42, 0.8), rgba(30, 30, 30, 0.9));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 15px;
+  padding: 15px 20px;
+  margin-bottom: 20px;
+  backdrop-filter: blur(10px);
+  box-shadow: 
+    0 8px 25px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.conversation-status-bar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #9c27b0, #4caf50, #00bcd4, #9c27b0);
+  background-size: 200% 100%;
+  animation: statusGradient 4s ease infinite;
+}
+
+@keyframes statusGradient {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.status-info {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  font-size: 14px;
+}
+
+.status-indicator {
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid currentColor;
+  animation: statusPulse 2s ease-in-out infinite;
+}
+
+@keyframes statusPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.conversation-title {
+  color: #64b5f6;
+  font-weight: 600;
+  background: rgba(100, 181, 246, 0.1);
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(100, 181, 246, 0.3);
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.last-save-time {
+  color: rgba(224, 230, 237, 0.7);
+  font-size: 12px;
+  font-style: italic;
+}
+
+/* 🆕 Enhanced Action Buttons */
+.conversation-btn {
+  background: linear-gradient(135deg, #9c27b0, #8e24aa) !important;
+  box-shadow: 0 4px 15px rgba(156, 39, 176, 0.3) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.conversation-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.conversation-btn:hover::before {
+  left: 100%;
+}
+
+.conversation-btn:hover {
+  box-shadow: 0 6px 20px rgba(156, 39, 176, 0.4) !important;
+  transform: translateY(-2px);
+}
+
+.save-btn {
+  background: linear-gradient(135deg, #4caf50, #45a049) !important;
+  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3) !important;
+}
+
+.save-btn:hover {
+  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4) !important;
+  transform: translateY(-2px);
+}
+
+.new-conversation-btn {
+  background: linear-gradient(135deg, #00bcd4, #00acc1) !important;
+  box-shadow: 0 4px 15px rgba(0, 188, 212, 0.3) !important;
+}
+
+.new-conversation-btn:hover {
+  box-shadow: 0 6px 20px rgba(0, 188, 212, 0.4) !important;
+  transform: translateY(-2px);
+}
+
+.delete-conversation-btn {
+  background: linear-gradient(135deg, #f44336, #d32f2f) !important;
+  box-shadow: 0 4px 15px rgba(244, 67, 54, 0.3) !important;
+}
+
+.delete-conversation-btn:hover {
+  background: linear-gradient(135deg, #e53935, #c62828) !important;
+  box-shadow: 0 6px 20px rgba(244, 67, 54, 0.4) !important;
+  transform: translateY(-2px);
+}
+
+
+
+/* 🆕 Conversation Indicators */
+.conversation-indicator {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  background: linear-gradient(135deg, #1976d2, #1565c0);
+  color: white;
+  padding: 10px 15px;
+  border-radius: 25px;
+  font-size: 12px;
+  font-weight: 600;
+  z-index: 1000;
+  box-shadow: 0 4px 15px rgba(25, 118, 210, 0.3);
+  animation: slideInLeft 0.5s ease-out;
+  direction: ltr;
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.conversation-indicator.saved {
+  background: linear-gradient(135deg, #4caf50, #45a049);
+  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+}
+
+.conversation-indicator.saving {
+  background: linear-gradient(135deg, #ff9800, #f57c00);
+  box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3);
+}
+
+.conversation-indicator.error {
+  background: linear-gradient(135deg, #f44336, #d32f2f);
+  box-shadow: 0 4px 15px rgba(244, 67, 54, 0.3);
+}
+
+/* 🆕 Enhanced Quick Messages */
+.quick-messages {
+  margin-bottom: 15px;
+}
+
+.quick-message-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.quick-message-btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+  transition: all 0.3s ease;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.quick-message-btn:hover::after {
+  width: 100px;
+  height: 100px;
+}
+
+/* 🆕 Loading States */
+.conversation-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #64b5f6;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.conversation-loading .spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(100, 181, 246, 0.2);
+  border-top: 2px solid #64b5f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* 🆕 Success/Error Messages */
+.notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 15px 20px;
+  border-radius: 10px;
+  font-weight: 600;
+  z-index: 10000;
+  animation: slideInRight 0.5s ease-out;
+  min-width: 300px;
+  backdrop-filter: blur(10px);
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.notification.success {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.9), rgba(69, 160, 73, 0.9));
+  color: white;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+  box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3);
+}
+
+.notification.error {
+  background: linear-gradient(135deg, rgba(244, 67, 54, 0.9), rgba(211, 47, 47, 0.9));
+  color: white;
+  border: 1px solid rgba(244, 67, 54, 0.3);
+  box-shadow: 0 8px 25px rgba(244, 67, 54, 0.3);
+}
+
+.notification.info {
+  background: linear-gradient(135deg, rgba(33, 150, 243, 0.9), rgba(30, 136, 229, 0.9));
+  color: white;
+  border: 1px solid rgba(33, 150, 243, 0.3);
+  box-shadow: 0 8px 25px rgba(33, 150, 243, 0.3);
+}
+
+/* 🆕 Enhanced Chat Container */
+.chat-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  margin-bottom: 10px;
+  position: relative; /* 🔥 הוספה */
+  overflow: hidden; /* 🔥 העבר את overflow לכאן */
+}
+
+.chat-wrapper::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  right: -10px;
+  bottom: -10px;
+  background: linear-gradient(45deg, 
+    rgba(100, 181, 246, 0.1), 
+    rgba(38, 198, 218, 0.1), 
+    rgba(156, 39, 176, 0.1), 
+    rgba(100, 181, 246, 0.1));
+  background-size: 400% 400%;
+  animation: chatGlow 8s ease infinite;
+  border-radius: 25px;
+  z-index: -1;
+  opacity: 0.7;
+}
+
+@keyframes chatGlow {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* 🆕 Conversation Metadata */
+.conversation-metadata {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  background: rgba(42, 42, 42, 0.6);
+  border-radius: 10px;
+  margin-bottom: 15px;
+  font-size: 12px;
+  color: rgba(224, 230, 237, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.metadata-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.metadata-icon {
+  font-size: 14px;
+}
+
+.message-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  justify-content: flex-end;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.3s ease;
+}
+
+.user-message-content:hover .message-actions {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.action-icon-btn {
+  background: rgba(42, 42, 42, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #e0e6ed;
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  min-width: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-icon-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.edit-btn:hover {
+  background: rgba(255, 193, 7, 0.2);
+  border-color: #ffc107;
+  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+}
+
+.delete-btn:hover {
+  background: rgba(244, 67, 54, 0.2);
+  border-color: #f44336;
+  box-shadow: 0 4px 15px rgba(244, 67, 54, 0.3);
+}
+
+/* מיכל עריכה */
+.user-message-edit {
+  width: 100%;
+}
+
+.edit-container {
+  background: linear-gradient(135deg, rgba(42, 42, 42, 0.95) 0%, rgba(30, 30, 30, 0.95) 100%);
+  border: 2px solid #ffc107;
+  border-radius: 15px;
+  padding: 15px;
+  box-shadow: 
+    0 8px 25px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(255, 193, 7, 0.3);
+  backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
+}
+
+.edit-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #ffc107, #ff9800, #ffc107);
+  background-size: 200% 100%;
+  animation: editGlow 2s ease-in-out infinite;
+}
+
+@keyframes editGlow {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* טקסט אזור עריכה */
+.edit-message-textarea {
+  width: 100%;
+  background: rgba(26, 26, 26, 0.8);
+  color: #e0e6ed;
+  border: 1px solid rgba(255, 193, 7, 0.4);
+  border-radius: 10px;
+  padding: 12px 15px;
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1.5;
+  resize: none;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(5px);
+  direction: rtl;
+  text-align: right;
+}
+
+.edit-message-textarea:focus {
+  outline: none;
+  border-color: #ffc107;
+  box-shadow: 
+    0 0 15px rgba(255, 193, 7, 0.3),
+    inset 0 1px 3px rgba(0, 0, 0, 0.2);
+  background: rgba(26, 26, 26, 0.9);
+}
+
+.edit-message-textarea::placeholder {
+  color: rgba(224, 230, 237, 0.6);
+}
+
+/* כפתורי פעולות עריכה */
+.edit-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  justify-content: flex-end;
+}
+
+.edit-action-btn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.save-btn {
+  background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+}
+
+.save-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #45a049 0%, #3e8e41 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+}
+
+.save-btn:disabled {
+  background: linear-gradient(135deg, #616161 0%, #424242 100%);
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.cancel-btn {
+  background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(244, 67, 54, 0.3);
+}
+
+.cancel-btn:hover {
+  background: linear-gradient(135deg, #d32f2f 0%, #c62828 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(244, 67, 54, 0.4);
+}
+
+/* טקסט עזרה */
+.edit-help {
+  font-size: 12px;
+  color: rgba(224, 230, 237, 0.7);
+  text-align: center;
+  margin-top: 8px;
+  font-style: italic;
+  background: rgba(255, 193, 7, 0.1);
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 193, 7, 0.2);
+}
+
+/* אנימציות מיוחדות */
+.user-message-edit {
+  animation: editFadeIn 0.4s ease-out;
+}
+
+@keyframes editFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* כפתורי עריכה ומחיקה בתפריט הראשי */
+.edit-last-btn {
+  background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%) !important;
+  box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3) !important;
+}
+
+.edit-last-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #f57c00 0%, #ef6c00 100%) !important;
+  box-shadow: 0 6px 20px rgba(255, 152, 0, 0.4) !important;
+  transform: translateY(-2px);
+}
+
+.delete-last-btn {
+  background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%) !important;
+  box-shadow: 0 4px 15px rgba(244, 67, 54, 0.3) !important;
+}
+
+.delete-last-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #d32f2f 0%, #c62828 100%) !important;
+  box-shadow: 0 6px 20px rgba(244, 67, 54, 0.4) !important;
+  transform: translateY(-2px);
+}
+
+.edit-last-btn:disabled,
+.delete-last-btn:disabled {
+  background: linear-gradient(135deg, #616161 0%, #424242 100%) !important;
+  color: rgba(255, 255, 255, 0.5) !important;
+  cursor: not-allowed !important;
+  opacity: 0.5 !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* הודעות זמניות (Toast) */
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+}
+
+/* עיצוב responsive לעריכה */
+@media (max-width: 768px) {
+  .message-actions {
+    justify-content: center;
+    opacity: 1; /* תמיד נראה במובייל */
+    transform: none;
+  }
+
+  .action-icon-btn {
+    padding: 8px 10px;
+    font-size: 16px;
+  }
+
+  .edit-container {
+    padding: 12px;
+  }
+
+  .edit-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .edit-action-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 12px;
+  }
+
+  .edit-help {
+    font-size: 11px;
+  }
+}
+
+/* אפקטים מתקדמים */
+.user-message-content {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.user-message-content:hover {
+  transform: translateY(-1px);
+}
+
+/* אינדיקציה ויזואלית שההודעה ניתנת לעריכה */
+.user-message-content:hover::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, rgba(255, 193, 7, 0.2), rgba(255, 152, 0, 0.2));
+  border-radius: 20px;
+  z-index: -1;
+  opacity: 0.6;
+}
+
+/* סטיילים נוספים להודעות */
+.user-message-display {
+  position: relative;
+}
+
+/* הבטחת מרחק מספיק לכפתורים */
+.user-message-content {
+  padding-bottom: 40px; /* מקום לכפתורים */
+}
+
+.user-message-content:last-child {
+  padding-bottom: 50px; /* מקום נוסף להודעה האחרונה */
+}
+
+/* ייצוב מוחלט של גרפים */
+.financial-chart,
+canvas[id*="chart"],
+canvas[id*="Chart"] {
+  height: 400px !important;
+  max-height: 400px !important;
+  min-height: 400px !important;
+  width: 100% !important;
+  display: block !important;
+  transition: none !important;
+  animation: none !important;
+  box-sizing: border-box !important;
+}
+
+/* Container יציב לגרפים */
+.chart-wrapper {
+  height: 450px !important;
+  min-height: 450px !important;
+  max-height: 450px !important;
+  overflow: hidden !important;
+  position: relative !important;
+  padding: 20px !important;
+  box-sizing: border-box !important;
+}
+
+.chart-container {
+  height: 480px !important;
+  min-height: 480px !important;
+  max-height: 480px !important;
+  overflow: hidden !important;
+  margin: 30px 0 !important;
+}
+
+/* Charts זה לצד זה - גובה קבוע */
+.charts-container {
+  min-height: 480px !important;
+  max-height: 480px !important;
+  overflow: hidden !important;
+  display: flex !important;
+  gap: 20px !important;
+  margin: 30px 0 !important;
+}
+
+.charts-container .chart-wrapper {
+  flex: 1 !important;
+  min-width: 300px !important;
+  max-width: calc(50% - 10px) !important;
+  height: 450px !important;
+  min-height: 450px !important;
+  max-height: 450px !important;
+}
+
+/* מניעת שינויים במהלך hover */
+canvas[id*="chart"]:hover,
+.financial-chart:hover {
+  height: 400px !important;
+  max-height: 400px !important;
+  min-height: 400px !important;
+  transform: none !important;
+}
+
+/* מניעת שינויים ב-focus */
+canvas[id*="chart"]:focus,
+.financial-chart:focus {
+  height: 400px !important;
+  max-height: 400px !important;
+  min-height: 400px !important;
+  outline: none !important;
+}
+
+/* מניעת כל האנימציות על גרפים */
+canvas[id*="chart"] *,
+.financial-chart * {
+  transition: none !important;
+  animation: none !important;
+  transform: none !important;
+}
+
+/* Chart.js specific overrides */
+.chartjs-render-monitor {
+  height: 400px !important;
+  max-height: 400px !important;
+  min-height: 400px !important;
+}
+
+
+
+/* 🆕 Enhanced Responsive Design */
+@media (max-width: 768px) {
+  .conversation-status-bar {
+    padding: 12px 15px;
+    margin-bottom: 15px;
+  }
+
+  .status-info {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .conversation-title {
+    max-width: none;
+    text-align: center;
+  }
+
+  .action-buttons {
+    gap: 8px;
+  }
+
+  .action-btn {
+    padding: 8px 12px;
+    font-size: 12px;
+    min-width: auto;
+  }
+
+  .conversation-indicator {
+    bottom: 10px;
+    left: 10px;
+    padding: 8px 12px;
+    font-size: 11px;
+  }
+
+  .notification {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    min-width: auto;
+  }
+
+  .financial-chart,
+  canvas[id*="chart"] {
+    height: 320px !important;
+    max-height: 320px !important;
+    min-height: 320px !important;
+  }
+  
+  .chart-wrapper {
+    height: 360px !important;
+    min-height: 360px !important;
+    max-height: 360px !important;
+    padding: 15px !important;
+  }
+  
+  .chart-container {
+    height: 380px !important;
+    min-height: 380px !important;
+    max-height: 380px !important;
+  }
+  
+  .charts-container {
+    flex-direction: column !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+  }
+  
+  .charts-container .chart-wrapper {
+    max-width: 100% !important;
+    margin-bottom: 20px !important;
+    height: 360px !important;
+    min-height: 360px !important;
+    max-height: 360px !important;
+  }
+
+}
+
+/* 🆕 Dark Mode Enhancements */
+@media (prefers-color-scheme: dark) {
+  .conversation-status-bar {
+    background: linear-gradient(135deg, rgba(26, 26, 26, 0.95), rgba(15, 15, 15, 0.98));
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  .status-indicator {
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  .conversation-title {
+    background: rgba(100, 181, 246, 0.15);
+    border-color: rgba(100, 181, 246, 0.4);
+  }
+}
+
+/* 🆕 High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .conversation-status-bar {
+    border-width: 2px;
+    border-color: #64b5f6;
+  }
+
+  .status-indicator {
+    border-width: 2px;
+  }
+
+  .action-btn {
+    border: 2px solid currentColor;
+  }
+}
+
+/* 🆕 Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .conversation-status-bar::before {
+    animation: none;
+  }
+
+  .status-indicator {
+    animation: none;
+  }
+
+  .chat-wrapper::before {
+    animation: none;
+  }
+
+  .conversation-indicator {
+    animation: none;
+  }
+
+  .notification {
+    animation: none;
+  }
+}

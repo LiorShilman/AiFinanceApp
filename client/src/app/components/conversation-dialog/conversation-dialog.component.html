@@ -1,0 +1,321 @@
+<!-- 📁 conversation-dialog.component.html -->
+<div class="conversation-dialog-overlay" *ngIf="isOpen" (click)="closeDialog()">
+  <div class="conversation-dialog" (click)="$event.stopPropagation()">
+    
+    <!-- Header -->
+    <div class="dialog-header">
+      <h2>💾 ניהול שיחות שמורות</h2>
+      <button class="close-btn" (click)="closeDialog()">✕</button>
+    </div>
+
+    <!-- Controls -->
+    <div class="dialog-controls">
+      <!-- Search -->
+      <div class="search-container">
+        <input 
+          type="text" 
+          [(ngModel)]="searchQuery" 
+          (input)="onSearchChange()"
+          placeholder="🔍 חפש שיחות..."
+          class="search-input">
+      </div>
+
+      <!-- Filters -->
+      <div class="filters-container">
+        <select [(ngModel)]="filters.category" (change)="applyFilters()" class="filter-select">
+          <option value="">כל הקטגוריות</option>
+          <option *ngFor="let cat of availableCategories" [value]="cat">
+            {{getCategoryIcon(cat)}} {{cat}}
+          </option>
+        </select>
+
+        <select [(ngModel)]="filters.sortBy" (change)="applyFilters()" class="filter-select">
+          <option value="updatedAt">מיון לפי עדכון אחרון</option>
+          <option value="createdAt">מיון לפי תאריך יצירה</option>
+          <option value="title">מיון לפי כותרת</option>
+          <option value="messageCount">מיון לפי מספר הודעות</option>
+        </select>
+
+        <label class="checkbox-label">
+          <input type="checkbox" [(ngModel)]="filters.favorites" (change)="applyFilters()">
+          ⭐ מועדפות בלבד
+        </label>
+
+        <!-- Date Range Filter -->
+        <div class="date-filter">
+          <input 
+            type="date" 
+            [(ngModel)]="filters.dateFrom" 
+            (change)="applyFilters()"
+            class="date-input"
+            placeholder="מתאריך">
+          <span class="date-separator">עד</span>
+          <input 
+            type="date" 
+            [(ngModel)]="filters.dateTo" 
+            (change)="applyFilters()"
+            class="date-input"
+            placeholder="עד תאריך">
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="actions-container">
+        <button class="action-btn refresh-btn" (click)="refreshConversations()">
+          🔄 רענן
+        </button>
+        <button class="action-btn stats-btn" (click)="showStatistics()">
+          📊 סטטיסטיקות
+        </button>
+        <button class="action-btn clear-filters-btn" (click)="clearFilters()">
+          🗑️ נקה סינונים
+        </button>
+      </div>
+    </div>
+
+    <!-- Results Summary -->
+    <div class="results-summary" *ngIf="pagination">
+      <span class="results-count">
+        נמצאו {{pagination.total}} שיחות
+      </span>
+      <span class="page-indicator" *ngIf="pagination.pages > 1">
+        עמוד {{pagination.page}} מתוך {{pagination.pages}}
+      </span>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="loading" class="loading-indicator">
+      <div class="spinner"></div>
+      <span>טוען שיחות...</span>
+    </div>
+
+    <!-- Conversations List -->
+    <div class="conversations-list" *ngIf="!loading">
+      
+      <!-- Empty State -->
+      <div *ngIf="conversations.length === 0" class="empty-state">
+        <div class="empty-icon">💬</div>
+        <h3>אין שיחות שמורות</h3>
+        <p *ngIf="!hasActiveFilters()">השיחות שלך ישמרו אוטומטית כאן</p>
+        <p *ngIf="hasActiveFilters()">לא נמצאו שיחות המתאימות לסינון</p>
+        <button *ngIf="hasActiveFilters()" class="clear-filters-btn-empty" (click)="clearFilters()">
+          נקה סינונים
+        </button>
+      </div>
+
+      <!-- Conversation Items -->
+      <div 
+        *ngFor="let conv of conversations; trackBy: trackBySessionId; let i = index" 
+        class="conversation-item"
+        [class.favorite]="conv.isFavorite"
+        [style.animation-delay]="(i * 0.05) + 's'"
+        (click)="loadConversation(conv)">
+        
+        <div class="conversation-main">
+          <div class="conversation-header">
+            <div class="title-section">
+              <span class="category-icon">{{getCategoryIcon(conv.category)}}</span>
+              <h4 class="conversation-title" [title]="conv.title">{{conv.title}}</h4>
+              <span *ngIf="conv.isFavorite" class="favorite-star">⭐</span>
+            </div>
+            <div class="conversation-meta">
+              <span class="message-count">{{conv.messageCount}} הודעות</span>
+              <span class="last-activity">{{formatTimeAgo(conv.lastActivity)}}</span>
+            </div>
+          </div>
+
+          <div class="conversation-description" *ngIf="conv.description" [title]="conv.description">
+            {{conv.description}}
+          </div>
+
+          <div class="conversation-tags" *ngIf="conv.tags && conv.tags.length > 0">
+            <span *ngFor="let tag of conv.tags" class="tag">{{tag}}</span>
+          </div>
+
+          <div class="conversation-performance" *ngIf="conv.performance">
+            <div class="perf-item" *ngIf="conv.performance.mathFormulas > 0">
+              <span class="perf-icon">🧮</span>
+              <span>{{conv.performance.mathFormulas}} נוסחאות</span>
+            </div>
+            <div class="perf-item" *ngIf="conv.performance.charts > 0">
+              <span class="perf-icon">📊</span>
+              <span>{{conv.performance.charts}} גרפים</span>
+            </div>
+            <div class="perf-item" *ngIf="conv.performance.tables > 0">
+              <span class="perf-icon">📋</span>
+              <span>{{conv.performance.tables}} טבלאות</span>
+            </div>
+            <div class="perf-item" *ngIf="conv.performance.responseTime">
+              <span class="perf-icon">⚡</span>
+              <span>{{conv.performance.responseTime}}ms</span>
+            </div>
+          </div>
+
+          <div class="conversation-dates">
+            <span class="created-date">נוצר: {{formatDate(conv.createdAt)}}</span>
+          </div>
+        </div>
+
+        <div class="conversation-actions" (click)="$event.stopPropagation()">
+          <button 
+            class="action-icon-btn favorite-btn"
+            [class.active]="conv.isFavorite"
+            (click)="toggleFavorite($event, conv)"
+            [title]="conv.isFavorite ? 'הסר ממועדפים' : 'הוסף למועדפים'">
+            ⭐
+          </button>
+          
+          <button 
+            class="action-icon-btn export-btn"
+            (click)="exportConversation($event, conv)"
+            title="יצא שיחה">
+            📤
+          </button>
+          
+          <button 
+            class="action-icon-btn duplicate-btn"
+            (click)="duplicateConversation($event, conv)"
+            title="שכפל שיחה">
+            📋
+          </button>
+          
+          <button 
+            class="action-icon-btn delete-btn"
+            (click)="deleteConversation($event, conv)"
+            title="מחק שיחה">
+            🗑️
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination" *ngIf="pagination && pagination.pages > 1">
+      <button 
+        class="page-btn"
+        [disabled]="pagination.page <= 1"
+        (click)="changePage(1)"
+        title="עמוד ראשון">
+        ⏮️
+      </button>
+
+      <button 
+        class="page-btn"
+        [disabled]="pagination.page <= 1"
+        (click)="changePage(pagination.page - 1)"
+        title="עמוד קודם">
+        ← הקודם
+      </button>
+      
+      <div class="page-numbers">
+        <button 
+          *ngFor="let page of getPageNumbers()" 
+          class="page-number"
+          [class.active]="page === pagination.page"
+          [disabled]="page === '...'"
+          (click)="page !== '...' && changePage(+page)">
+          {{page}}
+        </button>
+      </div>
+      
+      <button 
+        class="page-btn"
+        [disabled]="pagination.page >= pagination.pages"
+        (click)="changePage(pagination.page + 1)"
+        title="עמוד הבא">
+        הבא →
+      </button>
+
+      <button 
+        class="page-btn"
+        [disabled]="pagination.page >= pagination.pages"
+        (click)="changePage(pagination.pages)"
+        title="עמוד אחרון">
+        ⏭️
+      </button>
+    </div>
+
+    <div class="pagination-info" *ngIf="pagination">
+      <span class="page-info">
+        מציג {{getDisplayRange()}} מתוך {{pagination.total}} שיחות
+      </span>
+      
+      <select class="items-per-page" [(ngModel)]="filters.limit" (change)="applyFilters()">
+        <option value="10">10 בעמוד</option>
+        <option value="20">20 בעמוד</option>
+        <option value="50">50 בעמוד</option>
+        <option value="100">100 בעמוד</option>
+      </select>
+    </div>
+
+    <!-- Statistics Modal -->
+    <div class="stats-modal" *ngIf="showStats" (click)="showStats = false">
+      <div class="stats-content" (click)="$event.stopPropagation()">
+        <div class="stats-header">
+          <h3>📊 סטטיסטיקות שיחות</h3>
+          <button class="close-stats-btn" (click)="showStats = false">✕</button>
+        </div>
+        
+        <div *ngIf="statistics" class="stats-grid">
+          <div class="stat-item">
+            <span class="stat-number">{{statistics.total}}</span>
+            <span class="stat-label">סה"כ שיחות</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number">{{getMostPopularCategory()}}</span>
+            <span class="stat-label">קטגוריה פופולרית</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number">{{getAverageMessages()}}</span>
+            <span class="stat-label">הודעות ממוצע</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number">{{getFavoriteCount()}}</span>
+            <span class="stat-label">מועדפות</span>
+          </div>
+        </div>
+
+        <div class="stats-charts" *ngIf="statistics.categories">
+          <h4>התפלגות לפי קטגוריות</h4>
+          <div class="category-stats">
+            <div *ngFor="let cat of statistics.categories" class="category-stat">
+              <span class="category-name">{{getCategoryIcon(cat._id)}} {{cat._id}}</span>
+              <div class="category-bar">
+                <div class="category-fill" [style.width.%]="getCategoryPercentage(cat.count)"></div>
+              </div>
+              <span class="category-count">{{cat.count}}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="stats-recent" *ngIf="statistics.recentActivity">
+          <h4>פעילות אחרונה</h4>
+          <div class="recent-items">
+            <div *ngFor="let activity of statistics.recentActivity.slice(0, 5)" class="recent-item">
+              <span class="recent-title">{{activity.title}}</span>
+              <span class="recent-date">{{formatTimeAgo(activity.createdAt)}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bulk Actions (if conversations selected) -->
+    <div class="bulk-actions" *ngIf="selectedConversations.length > 0">
+      <div class="bulk-info">
+        נבחרו {{selectedConversations.length}} שיחות
+      </div>
+      <div class="bulk-buttons">
+        <button class="bulk-btn export-bulk" (click)="exportSelectedConversations()">
+          📤 יצא נבחרות
+        </button>
+        <button class="bulk-btn delete-bulk" (click)="deleteSelectedConversations()">
+          🗑️ מחק נבחרות
+        </button>
+        <button class="bulk-btn clear-selection" (click)="clearSelection()">
+          ✕ בטל בחירה
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
