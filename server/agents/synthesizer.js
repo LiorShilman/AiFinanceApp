@@ -1,5 +1,5 @@
 // 📁 server/agents/synthesizer.js
-// מסנתז תשובות — מאחד תגובות ממספר מומחים לתשובה אחת קוהרנטית
+// מסנתז תשובות — מאחד תגובות ממספר מומחים לתשובה אחת קוהרנטית ועמוקה
 
 const OpenAI = require('openai');
 const { AVAILABLE_AGENTS } = require('./orchestrator');
@@ -7,7 +7,7 @@ const { AVAILABLE_AGENTS } = require('./orchestrator');
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 /**
- * כשיש מומחה יחיד — מחזיר את התשובה כמו שהיא, עם עטיפת מטאדטה
+ * כשיש מומחה יחיד — מחזיר את התשובה כמו שהיא
  */
 function wrapSingleResponse(agentId, response) {
   const agent = AVAILABLE_AGENTS[agentId];
@@ -28,12 +28,9 @@ function wrapSingleResponse(agentId, response) {
 }
 
 /**
- * כשיש כמה מומחים — מאחד את התשובות לתשובה אחת זורמת
- * משתמש ב-GPT-4o לסינתזה (כי נדרשת הבנה עמוקה)
+ * כשיש כמה מומחים — מאחד + מעמיק + מזהה קונפליקטים
  */
 async function synthesizeMultiple(agentResponses, originalMessage) {
-  // agentResponses: [{ agentId, agentName, agentIcon, content }, ...]
-
   const sections = agentResponses.map(r => ({
     agent_id: r.agentId,
     agent_name: r.agentName,
@@ -41,7 +38,6 @@ async function synthesizeMultiple(agentResponses, originalMessage) {
     content: r.content
   }));
 
-  // בנה prompt לסינתזה
   const expertInputs = agentResponses.map(r =>
     `=== ${r.agentIcon} ${r.agentName} ===\n${r.content}`
   ).join('\n\n---\n\n');
@@ -52,19 +48,34 @@ async function synthesizeMultiple(agentResponses, originalMessage) {
       messages: [
         {
           role: 'system',
-          content: `אתה מסנתז פיננסי. קיבלת ניתוחים ממספר מומחים פיננסיים לאותה שאלה.
+          content: `אתה מסנתז פיננסי בכיר. קיבלת ניתוחים ממספר מומחים פיננסיים לאותה שאלה.
 
-תפקידך:
-1. כתוב סיכום מתואם קצר (3-5 משפטים) שמחבר את כל הניתוחים
-2. זהה קשרים בין התחומים שהמומחים לא ציינו
-3. תן המלצה משולבת שמתייחסת לתמונה הכוללת
-4. סיים עם שאלה חכמה אחת שמחברת בין התחומים
+## תפקידך:
 
-כללי פורמט:
-- כתוב בעברית
-- השתמש ב-MATHD{ }MATHD או MATHI{ }MATHI לנוסחאות
-- אל תחזור על מה שהמומחים כבר אמרו — רק חבר ותן תובנות חדשות
-- קצר וממוקד — לא יותר מ-300 מילים`
+### 1. ניתוח קשרים בין-תחומיים
+- זהה קשרים שכל מומחה בנפרד לא ראה (לדוגמה: ריבית גבוהה על משכנתא משפיעה על יכולת ההפרשה לפנסיה)
+- הצג את "התמונה הכוללת" שנוצרת מחיבור כל הניתוחים
+
+### 2. זיהוי וטיפול בסתירות
+- אם מומחים הגיעו למסקנות שונות — הסבר למה (הנחות שונות, זווית שונה)
+- כתוב בפירוש: "⚠️ שים לב: מומחה X ממליץ על A, בעוד מומחה Y מציע B — הסיבה לפער היא..."
+- תן המלצה משולבת שמיישבת את הסתירה
+
+### 3. תובנות אסטרטגיות
+- מה עדיפות הפעולות המומלצת? (מה לעשות קודם)
+- מהם הסיכונים הנסתרים שלא הוזכרו מספיק?
+- מהי ההזדמנות שנוצרת מהחיבור בין הנושאים?
+
+### 4. המלצה מעשית ממוקדת
+- 3-5 צעדים קונקרטיים לביצוע — ממוספרים, מעשיים, ניתנים לביצוע עכשיו
+
+## כללי פורמט:
+- כתוב בעברית מקצועית וזורמת
+- השתמש ב-MATHD{ }MATHD לנוסחאות בשורה נפרדת
+- השתמש ב-MATHI{ }MATHI לנוסחאות בתוך טקסט
+- אל תחזור על מה שהמומחים אמרו — רק הוסף ערך חדש
+- אורך: 400-700 מילים
+- סיים עם שאלה חכמה אחת שמאתגרת את המשתמש לחשוב על הצעד הבא`
         },
         {
           role: 'user',
@@ -73,16 +84,14 @@ async function synthesizeMultiple(agentResponses, originalMessage) {
 ניתוחי המומחים:
 ${expertInputs}
 
-כתוב סיכום מתואם שמחבר את כל הניתוחים:`
+כתוב סינתזה עמוקה שמחברת את כל הניתוחים ומוסיפה ערך אמיתי:`
         }
       ],
       temperature: 0.3,
-      max_tokens: 1500
+      max_tokens: 2500
     });
 
     const synthesis = response.choices[0].message.content;
-
-    // בנה markdown מאוחד: sections + סיכום
     const combinedMarkdown = buildCombinedMarkdown(sections, synthesis);
 
     return {
@@ -92,9 +101,9 @@ ${expertInputs}
       synthesis,
       markdown: combinedMarkdown
     };
+
   } catch (error) {
     console.error('❌ שגיאה בסינתזה:', error.message);
-    // fallback: הצג תשובות זו אחר זו בלי סינתזה
     const fallbackMarkdown = buildCombinedMarkdown(sections, null);
     return {
       mode: 'multi',
@@ -107,12 +116,11 @@ ${expertInputs}
 }
 
 /**
- * בונה markdown מאוחד מ-sections וסיכום
+ * בונה markdown מאוחד — sections + סיכום
  */
 function buildCombinedMarkdown(sections, synthesis) {
   let md = '';
 
-  // הצג כל section עם כותרת מומחה
   for (const section of sections) {
     md += `\n\n<div class="agent-section" data-agent="${section.agent_id}">\n\n`;
     md += `### ${section.agent_icon} ${section.agent_name}\n\n`;
@@ -120,10 +128,9 @@ function buildCombinedMarkdown(sections, synthesis) {
     md += `\n\n</div>\n\n`;
   }
 
-  // הוסף סיכום מתואם אם יש
   if (synthesis) {
     md += `\n\n<div class="agent-synthesis">\n\n`;
-    md += `### 🔗 סיכום מתואם\n\n`;
+    md += `### 🔗 ניתוח משולב — תמונה כוללת\n\n`;
     md += synthesis;
     md += `\n\n</div>\n\n`;
   }

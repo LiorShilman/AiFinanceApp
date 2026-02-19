@@ -1,5 +1,5 @@
 // 📁 server/agents/agentRunner.js
-// מריץ מומחה ספציפי — בונה את ה-system prompt שלו ומקבל תשובה מ-GPT-4o
+// מריץ מומחים — בונה system prompt ומקבל תשובה מ-GPT-4o
 
 const OpenAI = require('openai');
 const { baseRules } = require('./prompts/base');
@@ -12,7 +12,6 @@ const { generalPrompt } = require('./prompts/general');
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// מטאדטה של מומחים — מוגדר כאן כדי להימנע מ-circular dependency עם orchestrator
 const AGENT_META = {
   pension:    { name: 'מומחה פנסיה',      icon: '🏦' },
   mortgage:   { name: 'מומחה משכנתא',     icon: '🏠' },
@@ -22,7 +21,6 @@ const AGENT_META = {
   general:    { name: 'יועץ פיננסי כללי', icon: '💼' }
 };
 
-// מיפוי agent ID → prompt
 const AGENT_PROMPTS = {
   pension: pensionPrompt,
   mortgage: mortgagePrompt,
@@ -33,17 +31,24 @@ const AGENT_PROMPTS = {
 };
 
 /**
+ * בונה context חכם מהיסטוריה — מעדיף הודעות אחרונות
+ */
+function buildAgentHistory(history) {
+  if (!history || history.length === 0) return [];
+
+  // שמור עד 12 הודעות אחרונות לשמירת context מלאה
+  // אם יש יותר, חתוך מהתחלה אבל שמור את כל ה-12 האחרונות
+  const maxMessages = 12;
+  return history.slice(-maxMessages);
+}
+
+/**
  * מריץ מומחה יחיד עם ההיסטוריה המשותפת
- * @param {string} agentId - מזהה המומחה
- * @param {string} userMessage - הודעת המשתמש
- * @param {Array} history - היסטוריית השיחה המשותפת
- * @returns {string} תשובת המומחה (markdown)
  */
 async function runAgent(agentId, userMessage, history = []) {
   const expertPrompt = AGENT_PROMPTS[agentId] || AGENT_PROMPTS.general;
 
-  const systemPrompt = `
-${expertPrompt}
+  const systemPrompt = `${expertPrompt}
 
 ---
 
@@ -51,12 +56,13 @@ ${baseRules}
 
 ---
 
-[Session context: ${Date.now()}] [Agent: ${agentId}] [History: ${history.length} messages]
-`.trim();
+[Agent: ${agentId}] [Session messages: ${history.length}]`.trim();
+
+  const agentHistory = buildAgentHistory(history);
 
   const messages = [
     { role: 'system', content: systemPrompt },
-    ...history,
+    ...agentHistory,
     { role: 'user', content: userMessage }
   ];
 
@@ -67,8 +73,7 @@ ${baseRules}
     presence_penalty: 0.1,
     frequency_penalty: 0.1,
     top_p: 0.9,
-    max_completion_tokens: 5000,
-    seed: Math.floor(Math.random() * 1000000),
+    max_completion_tokens: 6000,
     stream: false
   });
 
@@ -76,11 +81,9 @@ ${baseRules}
 }
 
 /**
- * מריץ כמה מומחים במקביל (Promise.all)
- * @param {Array<{id, confidence, reason}>} agents - רשימת מומחים
- * @param {string} userMessage
- * @param {Array} history
- * @returns {Array<{agentId, agentName, agentIcon, content}>}
+ * מריץ כמה מומחים במקביל
+ * שדרוג: מדווח על כשלים — המשתמש יודע אם agent נכשל
+ * @returns {{ responses: Array, failed: Array }}
  */
 async function runAgentsInParallel(agents, userMessage, history) {
   const results = await Promise.allSettled(
@@ -90,15 +93,42 @@ async function runAgentsInParallel(agents, userMessage, history) {
           agentId: agent.id,
           agentName: AGENT_META[agent.id]?.name || agent.id,
           agentIcon: AGENT_META[agent.id]?.icon || '💼',
-          content
+          content,
+          success: true
         }))
+        .catch(err => {
+          console.error(`❌ כשל agent [${agent.id}]:`, err.message);
+          return {
+            agentId: agent.id,
+            agentName: AGENT_META[agent.id]?.name || agent.id,
+            success: false,
+            error: err.message
+          };
+        })
     )
   );
 
-  // סנן רק תשובות מוצלחות
-  return results
-    .filter(r => r.status === 'fulfilled')
-    .map(r => r.value);
+  const successful = [];
+  const failed = [];
+
+  for (const result of results) {
+    const val = result.status === 'fulfilled' ? result.value : result.reason;
+    if (val?.success) {
+      successful.push(val);
+    } else {
+      failed.push({
+        agentId: val?.agentId || 'unknown',
+        agentName: val?.agentName || 'לא ידוע',
+        reason: val?.error || 'שגיאה לא ידועה'
+      });
+    }
+  }
+
+  if (failed.length > 0) {
+    console.warn(`⚠️ ${failed.length} agents נכשלו: ${failed.map(f => f.agentId).join(', ')}`);
+  }
+
+  return { responses: successful, failed };
 }
 
-module.exports = { runAgent, runAgentsInParallel };
+module.exports = { runAgent, runAgentsInParallel, AGENT_META };

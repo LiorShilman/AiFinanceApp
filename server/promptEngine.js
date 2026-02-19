@@ -12,8 +12,57 @@ marked.setOptions({
   headerIds: false,
 });
 
-const sessions = new Map();
+// ═══════════════════════════════════════════
+// 💾 In-memory response cache
+// Key: SHA-like hash(agentIds + normalizedMessage)
+// Value: { markdown, agents_used, mode, sections, timestamp }
+// ═══════════════════════════════════════════
+const responseCache = new Map();
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 שעות
 
+function buildCacheKey(agentIds, message) {
+  const normalized = message.trim().toLowerCase().replace(/\s+/g, ' ');
+  const agentsKey = [...agentIds].sort().join(',');
+  return `${agentsKey}::${normalized}`;
+}
+
+function getCachedResponse(agentIds, message) {
+  const key = buildCacheKey(agentIds, message);
+  const entry = responseCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.timestamp > CACHE_TTL_MS) {
+    responseCache.delete(key);
+    return null;
+  }
+  console.log(`⚡ Cache hit: [${agentIds.join(', ')}]`);
+  return entry;
+}
+
+function setCachedResponse(agentIds, message, data) {
+  const key = buildCacheKey(agentIds, message);
+  responseCache.set(key, { ...data, timestamp: Date.now() });
+  // מנע גדילה בלתי מוגבלת — מקסימום 200 entries
+  if (responseCache.size > 200) {
+    const firstKey = responseCache.keys().next().value;
+    responseCache.delete(firstKey);
+  }
+}
+
+// ═══════════════════════════════════════════
+// 💬 Session storage
+// ═══════════════════════════════════════════
+const sessions = new Map();
+const SESSION_LAST_ACTIVITY = new Map();
+const MAX_SESSIONS = 100;
+const SESSION_TTL_MS = 60 * 60 * 1000; // שעה
+
+function touchSession(sessionId) {
+  SESSION_LAST_ACTIVITY.set(sessionId, Date.now());
+}
+
+// ═══════════════════════════════════════════
+// 🧹 LaTeX & sanitize
+// ═══════════════════════════════════════════
 function sanitizeAndFixReply(reply) {
   // שלב 1: סילוק עברית מתוך LaTeX
   const sanitizeLatexHebrew = (content) => {
@@ -21,37 +70,31 @@ function sanitizeAndFixReply(reply) {
       return `(${hebrewText})`;
     });
   };
-  
 
   // שלב 2: הוצאת סמל ש"ח או ₪ מתוך הנוסחאות
   const sanitizeShekelInLatex = (content) => {
-    // inline: \( ... ש"ח ... \)
     content = content.replace(/\\\(([^)]*?)((₪|ש"?ח)[^)]*?)\\\)/g, (_, expr, currencyPart) => {
       const mathExpr = expr.replace(/(₪|ש"?ח)/g, '').trim();
       return `\\(${mathExpr}\\) ${currencyPart.trim()}`;
     });
-
-    // display: \[ ... ש"ח ... \]
     content = content.replace(/\\\[([\s\S]*?)((₪|ש"?ח)[\s\S]*?)\\\]/g, (_, expr, currencyPart) => {
       const mathExpr = expr.replace(/(₪|ש"?ח)/g, '').trim();
       return `\\[${mathExpr}\\] ${currencyPart.trim()}`;
     });
-
     return content;
   };
 
   // שלב 3: סינון תווים אסורים כמו #
   const sanitizeInvalidLatexChars = (content) => {
-    return content.replace(/\\\(([^)]*?)\\\)/g, (match, inner) => {
-      const cleaned = inner.replace(/#/g, ''); // מסיר # בתוך נוסחה inline
+    return content.replace(/\\\(([^)]*?)\\\)/g, (_m, inner) => {
+      const cleaned = inner.replace(/#/g, '');
       return `\\(${cleaned}\\)`;
-    }).replace(/\\\[([\s\S]*?)\\\]/g, (match, inner) => {
+    }).replace(/\\\[([\s\S]*?)\\\]/g, (_m, inner) => {
       const cleaned = inner.replace(/#/g, '');
       return `\\[${cleaned}\\]`;
     });
   };
 
-  // חיבור כל השלבים
   let cleaned = reply;
   cleaned = sanitizeLatexHebrew(cleaned);
   cleaned = sanitizeShekelInLatex(cleaned);
@@ -59,57 +102,12 @@ function sanitizeAndFixReply(reply) {
   return cleaned;
 }
 
-
-
-
-// פונקציה לוולידציה של איכות התשובה
-function validateFinancialResponse(response) {
-  const requiredElements = [
-    'דוח ניתוח פיננסי מקיף',
-    'שלב 1',
-    'שלב 2', 
-    'שלב 3',
-    'שלב 4',
-    'שלב 5',
-    'שלב 6',
-    'ניתוח נתונים ראשוניים',
-    'חישובים מתמטיים',
-    'השוואת תרחישים',
-    'ויזואליזציה אינטראקטיבית',
-    'ניתוח מקצועי ומסקנות',
-    'סיכום מנהלים',
-    'Chart.js',
-    '\\[', // נוסחאות LaTeX display
-    '\\(', // נוסחאות LaTeX inline
-    '<table', // טבלאות HTML
-    '<canvas' // גרפים
-  ];
-  
-  const missing = requiredElements.filter(element => 
-    !response.includes(element)
-  );
-  
-  if (missing.length > 0) {
-    console.warn('⚠️ חסרים אלמנטים בתשובה:', missing);
-    return {
-      isValid: false,
-      missing: missing,
-      score: Math.max(0, (requiredElements.length - missing.length) / requiredElements.length * 100)
-    };
-  }
-  
-  return {
-    isValid: true,
-    missing: [],
-    score: 100
-  };
-}
-
+// ═══════════════════════════════════════════
+// 📊 Chart ID deduplication
+// ═══════════════════════════════════════════
 function extractUsedChartIds(messages) {
-  // ביטוי רגולרי שמוצא כל canvas ID (לא רק chart_)
   const idRegex = /<canvas[^>]*id=["']([^"']+)["']/g;
   const ids = new Set();
-  
   for (const msg of messages) {
     if (msg.role === 'assistant' && typeof msg.content === 'string') {
       let match;
@@ -122,27 +120,18 @@ function extractUsedChartIds(messages) {
 }
 
 function fixDuplicateChartIdsInReply(reply, usedIds) {
-  // ביטוי רגולרי שמוצא כל canvas ID
   const idRegex = /<canvas[^>]*id=["']([^"']+)["']/g;
   const replacements = new Map();
   let updatedReply = reply;
-
-  // שלב 1: מצא ותחלף canvas IDs כפולים
   const matches = [...reply.matchAll(idRegex)];
-  
+
   for (const match of matches) {
     const fullMatch = match[0];
     const id = match[1];
-    
     if (usedIds.has(id)) {
-      // צור מזהה חדש
-      const uniqueSuffix = Date.now().toString(36) + Math.floor(Math.random() * 1000).toString(36);
+      const uniqueSuffix = Date.now().toString(36) + Math.floor(Math.random() * 10000).toString(36);
       const newId = `chart_${uniqueSuffix}`;
-      
-      // שמור את ההחלפה
       replacements.set(id, newId);
-      
-      // החלף את ה-canvas tag
       const newCanvasTag = fullMatch.replace(`id="${id}"`, `id="${newId}"`).replace(`id='${id}'`, `id='${newId}'`);
       updatedReply = updatedReply.replace(fullMatch, newCanvasTag);
     } else {
@@ -150,31 +139,19 @@ function fixDuplicateChartIdsInReply(reply, usedIds) {
     }
   }
 
-  // שלב 2: החלף כל הפניה ל-IDs ששונו
   for (const [oldId, newId] of replacements) {
-    // החלף בקוד JavaScript
     const patterns = [
-      // getElementById
       new RegExp(`getElementById\\(["']${escapeRegex(oldId)}["']\\)`, 'g'),
-      // משתני ctx_
       new RegExp(`ctx_${escapeRegex(oldId)}\\b`, 'g'),
-      // משתני chart/Chart עם השם הישן
       new RegExp(`\\b(chart|Chart)_?${escapeRegex(oldId)}\\b`, 'g'),
-      // כל הפניה אחרת עם גרש או גרשיים
       new RegExp(`["']${escapeRegex(oldId)}["']`, 'g')
     ];
-
     patterns.forEach(pattern => {
       updatedReply = updatedReply.replace(pattern, (match) => {
-        if (match.includes('getElementById')) {
-          return `getElementById("${newId}")`;
-        } else if (match.startsWith('ctx_')) {
-          return `ctx_${newId}`;
-        } else if (match.includes('chart') || match.includes('Chart')) {
-          return match.replace(oldId, newId);
-        } else {
-          return `"${newId}"`;
-        }
+        if (match.includes('getElementById')) return `getElementById("${newId}")`;
+        if (match.startsWith('ctx_')) return `ctx_${newId}`;
+        if (match.includes('chart') || match.includes('Chart')) return match.replace(oldId, newId);
+        return `"${newId}"`;
       });
     });
   }
@@ -182,114 +159,147 @@ function fixDuplicateChartIdsInReply(reply, usedIds) {
   return updatedReply;
 }
 
-// פונקציה עזר לescaping של regex
 function escapeRegex(string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-// שימוש:
-function processReplyWithChartFix(reply, messages) {
-  const usedIds = extractUsedChartIds(messages);
-  return fixDuplicateChartIdsInReply(reply, usedIds);
-}
+// ═══════════════════════════════════════════
+// 🚨 Smart error classification
+// ═══════════════════════════════════════════
+function classifyError(error) {
+  const msg = error.message || '';
+  const status = error.status || error.statusCode || 0;
 
-
-function detectAnalysisType(message) {
-  const lowered = message.toLowerCase();
-
-  if (lowered.includes('פנסיה') || lowered.includes('קצבה') || lowered.includes('פרישה')) {
-    return 'ניתוח פנסיוני';
-  }
-  if (lowered.includes('משכנתא') || lowered.includes('הלוואה לדיור')) {
-    return 'ניתוח משכנתא והשוואת מסלולים';
-  }
-  if (lowered.includes('הלוואה') || lowered.includes('ריבית') || lowered.includes('פרעון מוקדם')) {
-    return 'ניתוח הלוואה';
-  }
-  if (lowered.includes('תקציב') || lowered.includes('הוצאות') || lowered.includes('ניהול חודשי')) {
-    return 'ניתוח תקציב אישי';
-  }
-  if (lowered.includes('חיסכון') || lowered.includes('השקעה') || lowered.includes('תשואה')) {
-    return 'חישוב חיסכון והשקעות';
-  }
-  if (lowered.includes('קנייה') && lowered.includes('שכירות')) {
-    return 'השוואת קנייה מול שכירות';
-  }
-  if (lowered.includes('ילדים') || lowered.includes('חינוך פיננסי')) {
-    return 'תכנון פיננסי למשפחה וילדים';
-  }
-
-  return 'ניתוח פיננסי כללי';
-}
-
-async function getConversationSession (sessionId) {
-  const history = sessions.get(sessionId) || [];
-  return {
-      conversation: history
+  if (status === 429 || msg.includes('rate limit') || msg.includes('Rate limit')) {
+    return {
+      userMessage: '⏳ השרת עמוס כרגע. אנא המתן 30 שניות ונסה שוב.',
+      type: 'rate_limit',
+      retryAfter: 30
     };
+  }
+  if (status === 401 || msg.includes('Incorrect API key') || msg.includes('invalid_api_key')) {
+    return {
+      userMessage: '🔑 שגיאת הרשאה — יש לבדוק את ה-API Key בקובץ .env',
+      type: 'auth_error',
+      retryAfter: null
+    };
+  }
+  if (status === 503 || msg.includes('overloaded') || msg.includes('server_error')) {
+    return {
+      userMessage: '🔄 שירות OpenAI זמנית לא זמין. נסה שוב בעוד דקה.',
+      type: 'service_unavailable',
+      retryAfter: 60
+    };
+  }
+  if (msg.includes('timeout') || msg.includes('ETIMEDOUT') || msg.includes('ECONNRESET')) {
+    return {
+      userMessage: '⏱️ הבקשה לקחה יותר מדי זמן. נסה שאלה קצרה יותר או נסה שוב.',
+      type: 'timeout',
+      retryAfter: 10
+    };
+  }
+  if (msg.includes('context_length') || msg.includes('maximum context')) {
+    return {
+      userMessage: '📏 השיחה ארוכה מדי. נסה להתחיל שיחה חדשה.',
+      type: 'context_length',
+      retryAfter: null
+    };
+  }
+
+  return {
+    userMessage: `❗ שגיאה טכנית: ${msg}. אנא נסה שוב בעוד רגע.`,
+    type: 'unknown',
+    retryAfter: 5
+  };
+}
+
+// ═══════════════════════════════════════════
+// 🧠 Main handler
+// ═══════════════════════════════════════════
+async function getConversationSession(sessionId) {
+  const history = sessions.get(sessionId) || [];
+  return { conversation: history };
 }
 
 async function handlePrompt(sessionId, userMessage) {
   const history = sessions.get(sessionId) || [];
+  touchSession(sessionId);
 
   try {
-    // ═══════════════════════════════════════════
-    // שלב 1: סיווג — אילו מומחים רלוונטיים?
-    // ═══════════════════════════════════════════
+    // ─── שלב 1: סיווג ───────────────────────────────────
     const classification = await classify(userMessage, history);
     const { agents, complexity, source } = classification;
+    const agentIds = agents.map(a => a.id);
 
     console.log(`🧭 סיווג (${source}): [${agents.map(a => `${a.id}(${a.confidence}%)`).join(', ')}] | mode: ${complexity}`);
 
-    // ═══════════════════════════════════════════
-    // שלב 2: הרצת מומחים (במקביל אם יש כמה)
-    // ═══════════════════════════════════════════
+    // ─── שלב 1.5: בדוק cache ─────────────────────────────
+    const cached = getCachedResponse(agentIds, userMessage);
+    if (cached) {
+      // גם כשיש cache — שמור היסטוריה
+      sessions.set(sessionId, [
+        ...history,
+        { role: 'user', content: userMessage },
+        { role: 'assistant', content: cached.markdown }
+      ]);
+      cleanOldSessions();
+      return {
+        markdown: cached.markdown,
+        agents_used: cached.agents_used,
+        mode: cached.mode,
+        sections: cached.sections,
+        from_cache: true
+      };
+    }
+
+    // ─── שלב 2: הרצת מומחים ──────────────────────────────
     let result;
+    let agentFailures = [];
 
     if (agents.length === 1) {
-      // מומחה יחיד — הכי מהיר
       const agentId = agents[0].id;
       console.log(`🤖 מפעיל מומחה יחיד: ${agentId}`);
       const rawReply = await runAgent(agentId, userMessage, history);
       result = wrapSingleResponse(agentId, rawReply);
 
     } else {
-      // כמה מומחים — במקביל + סינתזה
       console.log(`🤖 מפעיל ${agents.length} מומחים במקביל...`);
-      const agentResponses = await runAgentsInParallel(agents, userMessage, history);
+      const { responses, failed } = await runAgentsInParallel(agents, userMessage, history);
+      agentFailures = failed;
 
-      if (agentResponses.length === 0) {
-        throw new Error('כל המומחים נכשלו');
-      } else if (agentResponses.length === 1) {
-        result = wrapSingleResponse(agentResponses[0].agentId, agentResponses[0].content);
+      if (responses.length === 0) {
+        throw new Error('כל המומחים נכשלו — אנא נסה שוב');
+      } else if (responses.length === 1) {
+        result = wrapSingleResponse(responses[0].agentId, responses[0].content);
       } else {
-        console.log(`🔗 מסנתז ${agentResponses.length} תשובות...`);
-        result = await synthesizeMultiple(agentResponses, userMessage);
+        console.log(`🔗 מסנתז ${responses.length} תשובות...`);
+        result = await synthesizeMultiple(responses, userMessage);
+      }
+
+      // הוסף הודעת כשל אם agent נכשל
+      if (agentFailures.length > 0) {
+        const failedNames = agentFailures.map(f => f.agentName).join(', ');
+        console.warn(`⚠️ agents שנכשלו: ${failedNames}`);
+        result.markdown += `\n\n> ⚠️ **שים לב**: ניתוח מ-${failedNames} לא היה זמין הפעם. התשובה מבוססת על המומחים הזמינים.`;
       }
     }
 
-    // ═══════════════════════════════════════════
-    // שלב 3: תיקון chart IDs כפולים
-    // ═══════════════════════════════════════════
-    const allMessages = [
-      ...history,
-      { role: 'user', content: userMessage }
-    ];
+    // ─── שלב 3: sanitize LaTeX + תיקון chart IDs ─────────
+    const sanitized = sanitizeAndFixReply(result.markdown);
+    const allMessages = [...history, { role: 'user', content: userMessage }];
     const usedIds = extractUsedChartIds(allMessages);
-    const cleanedMarkdown = fixDuplicateChartIdsInReply(result.markdown, usedIds);
+    const cleanedMarkdown = fixDuplicateChartIdsInReply(sanitized, usedIds);
 
-    // ═══════════════════════════════════════════
-    // שלב 4: שמירת היסטוריה מאוחדת
-    // ═══════════════════════════════════════════
+    // ─── שלב 4: שמירת היסטוריה ───────────────────────────
     sessions.set(sessionId, [
       ...history,
       { role: 'user', content: userMessage },
       { role: 'assistant', content: cleanedMarkdown }
     ]);
+    cleanOldSessions();
 
-    console.log(`✅ תגובה מוכנה | מומחים: [${result.agents_used.join(', ')}] | mode: ${result.mode}`);
-
-    return {
+    // ─── שלב 5: שמירה ב-cache ────────────────────────────
+    const cacheData = {
       markdown: cleanedMarkdown,
       agents_used: result.agents_used,
       mode: result.mode,
@@ -299,112 +309,118 @@ async function handlePrompt(sessionId, userMessage) {
         agent_icon: s.agent_icon
       }))
     };
+    setCachedResponse(agentIds, userMessage, cacheData);
+
+    console.log(`✅ תגובה מוכנה | מומחים: [${result.agents_used.join(', ')}] | mode: ${result.mode}`);
+
+    return cacheData;
 
   } catch (error) {
-    console.error('❌ שגיאה בקריאה ל־OpenAI:', error);
+    console.error('❌ שגיאה בקריאה ל-OpenAI:', error);
+    const classified = classifyError(error);
     return {
-      markdown: `❗ שגיאה טכנית: ${error.message}. אנא נסה שוב בעוד רגע.`,
+      markdown: classified.userMessage,
       agents_used: [],
-      mode: 'error'
+      mode: 'error',
+      error_type: classified.type,
+      retry_after: classified.retryAfter
     };
   }
 }
 
-// 📁 promptEngine.js - וודא שהפונקציה הזו קיימת:
-
-// 📊 פונקציה לסטטיסטיקות ביצועים
+// ═══════════════════════════════════════════
+// 📊 Performance stats
+// ═══════════════════════════════════════════
 function getPerformanceStats() {
   const sessionEntries = Array.from(sessions.entries());
-  
   return {
-    // Sessions data
     activeSessions: sessions.size,
-    averageHistoryLength: sessions.size > 0 
-      ? sessionEntries.reduce((sum, [_, history]) => sum + history.length, 0) / sessions.size 
+    cacheSize: responseCache.size,
+    averageHistoryLength: sessions.size > 0
+      ? sessionEntries.reduce((sum, [_, history]) => sum + history.length, 0) / sessions.size
       : 0,
-    
-    // Memory usage
     memoryUsage: process.memoryUsage(),
-    
-    // Server info
     uptime: process.uptime(),
     platform: process.platform,
     nodeVersion: process.version,
     pid: process.pid,
-    
-    // Sessions details
     sessionDetails: sessionEntries.map(([sessionId, history]) => ({
       id: sessionId.substring(0, 8) + '...',
       messages: history.length,
-      lastActivity: history.length > 0 
-        ? new Date(Date.now() - 1000).toISOString() // משוער
+      lastActivity: SESSION_LAST_ACTIVITY.get(sessionId)
+        ? new Date(SESSION_LAST_ACTIVITY.get(sessionId)).toISOString()
         : 'לא ידוע'
     })),
-    
-    // Performance metrics
     metrics: {
       memoryUsageMB: Math.round(process.memoryUsage().rss / 1024 / 1024),
       heapUsedMB: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
       heapTotalMB: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
-      externalMB: Math.round(process.memoryUsage().external / 1024 / 1024),
       uptimeFormatted: formatUptime(process.uptime()),
-      avgHistoryLength: Math.round((sessions.size > 0 
-        ? sessionEntries.reduce((sum, [_, history]) => sum + history.length, 0) / sessions.size 
-        : 0) * 100) / 100
+      avgHistoryLength: sessionEntries.length > 0
+        ? Math.round(sessionEntries.reduce((s, [_, h]) => s + h.length, 0) / sessionEntries.length * 100) / 100
+        : 0
     }
   };
 }
 
 function formatUptime(seconds) {
-  const days = Math.floor(seconds / (24 * 3600));
-  const hours = Math.floor((seconds % (24 * 3600)) / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = Math.floor(seconds % 60);
-  
-  let result = '';
-  if (days > 0) result += `${days}d `;
-  if (hours > 0) result += `${hours}h `;
-  if (minutes > 0) result += `${minutes}m `;
-  result += `${secs}s`;
-  
-  return result.trim();
+  const d = Math.floor(seconds / 86400);
+  const h = Math.floor((seconds % 86400) / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  return [d && `${d}d`, h && `${h}h`, m && `${m}m`, `${s}s`].filter(Boolean).join(' ');
 }
 
-
-// 🧹 פונקציה מאופטמת לניקוי session
+// ═══════════════════════════════════════════
+// 🧹 Session cleanup
+// ═══════════════════════════════════════════
 function clearSession(sessionId) {
   if (sessions.has(sessionId)) {
     sessions.delete(sessionId);
-    console.log(`🗑️ Session ${sessionId} נוקה בהצלחה`);
-    return { success: true, message: 'Session cleared' };
-  } else {
-    console.warn(`⚠️ Session ${sessionId} לא נמצא`);
-    return { success: false, message: 'Session not found' };
+    SESSION_LAST_ACTIVITY.delete(sessionId);
+    console.log(`🗑️ Session ${sessionId} נוקה`);
+    return { success: true };
   }
+  return { success: false, message: 'Session not found' };
 }
 
-// פונקציה לניקוי היסטוריה ישנה (אופציונלי)
 function cleanOldSessions() {
-  const maxSessions = 50;
-  const maxAge = 30 * 60 * 1000; // 30 דקות במקום שעה
-  if (sessions.size > maxSessions) {
-    const entries = Array.from(sessions.entries());
-    const toDelete = entries.slice(0, entries.length - maxSessions);
-    
-    toDelete.forEach(([key]) => {
-      sessions.delete(key);
+  const now = Date.now();
+
+  // נקה sessions לא פעילים
+  for (const [id, lastActivity] of SESSION_LAST_ACTIVITY.entries()) {
+    if (now - lastActivity > SESSION_TTL_MS) {
+      sessions.delete(id);
+      SESSION_LAST_ACTIVITY.delete(id);
+    }
+  }
+
+  // אם עדיין יותר מ-MAX_SESSIONS — מחק הישנים ביותר
+  if (sessions.size > MAX_SESSIONS) {
+    const sortedByActivity = Array.from(SESSION_LAST_ACTIVITY.entries())
+      .sort((a, b) => a[1] - b[1]);
+    const toDelete = sortedByActivity.slice(0, sessions.size - MAX_SESSIONS);
+    toDelete.forEach(([id]) => {
+      sessions.delete(id);
+      SESSION_LAST_ACTIVITY.delete(id);
     });
-    
     console.log(`🧹 נוקו ${toDelete.length} sessions ישנים (סה"כ: ${sessions.size})`);
+  }
+
+  // נקה cache פג תוקף
+  for (const [key, entry] of responseCache.entries()) {
+    if (now - entry.timestamp > CACHE_TTL_MS) {
+      responseCache.delete(key);
+    }
   }
 }
 
 // ניקוי אוטומטי כל 15 דקות
 setInterval(cleanOldSessions, 15 * 60 * 1000);
 
-module.exports = { 
-  handlePrompt, 
+module.exports = {
+  handlePrompt,
   getConversationSession,
-  clearSession, 
-  getPerformanceStats 
+  clearSession,
+  getPerformanceStats
 };
