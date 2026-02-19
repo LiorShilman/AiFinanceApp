@@ -514,7 +514,9 @@
 }
 
 .ai-message-content canvas[id*="chart"],
+.ai-message-content canvas[id*="Chart"],
 ::ng-deep canvas[id*="chart"],
+::ng-deep canvas[id*="Chart"],
 ::ng-deep .financial-chart {
   height: 400px !important;
   max-height: 400px !important;
@@ -1253,7 +1255,9 @@ mjx-container[display="true"] {
   .help-modal        { padding: 24px 16px; }
 
   .ai-message-content canvas[id*="chart"],
+  .ai-message-content canvas[id*="Chart"],
   ::ng-deep canvas[id*="chart"],
+  ::ng-deep canvas[id*="Chart"],
   ::ng-deep .financial-chart { height: 280px !important; max-height: 280px !important; }
 
   .ai-message-content .chart-wrapper,

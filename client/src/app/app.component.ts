@@ -1333,7 +1333,7 @@ private addChartPairingLogic(code: string, scriptIndex: number): string {
   };
 
   private resizeAllCharts() {
-    const chartElements = document.querySelectorAll('canvas[id*="chart"]');
+    const chartElements = document.querySelectorAll('canvas[id*="chart"], canvas[id*="Chart"]');
 
     chartElements.forEach((canvas: any) => {
       if (!canvas) return;
@@ -1474,8 +1474,8 @@ private addChartPairingLogic(code: string, scriptIndex: number): string {
       // הוספת הגדרות יציבות
       code = this.makeChartCodeResponsive(code);
 
-      console.log(`🚀 מריץ סקריפט יציב ${index + 1}`);
-      
+      console.log(`🚀 מריץ סקריפט ${index + 1}`);
+
       // הרצה בטוחה עם TypeScript compliance
       try {
         new Function(code)();
@@ -1543,7 +1543,8 @@ private addChartPairingLogic(code: string, scriptIndex: number): string {
     style.textContent = `
       /* ייצוב גרפים */
       .financial-chart,
-      canvas[id*="chart"] {
+      canvas[id*="chart"],
+      canvas[id*="Chart"] {
         height: 400px !important;
         max-height: 400px !important;
         width: 100% !important;
@@ -1600,106 +1601,55 @@ private addChartPairingLogic(code: string, scriptIndex: number): string {
 
 
   private makeChartCodeResponsive(code: string): string {
-    // הגדרות רספונסיביות יציבות
-    const responsiveOptions = `
-    responsive: true,
-    maintainAspectRatio: true,
-    aspectRatio: 2,
-    resizeDelay: 100,
-    interaction: {
-      intersect: false,
-      mode: 'index'
-    },
-    layout: {
-      padding: {
-        top: 10,
-        bottom: 10,
-        left: 10,
-        right: 10
-      }
-    },
-    elements: {
-      point: {
-        radius: 3,
-        hoverRadius: 5
-      }
-    },`;
+    // Inject a universal _safeChart wrapper.
+    // Defined on window so it's available even after multiple script runs.
+    // Uses var to avoid strict-mode re-declaration issues.
+    const helperSetup = `(function() {
+  if (typeof window._safeChart !== 'undefined') return;
+  window._safeChart = function(ctxOrCanvas, config) {
+    // Resolve to actual HTMLCanvasElement (handle both element and 2D context)
+    var canvas = (ctxOrCanvas instanceof HTMLCanvasElement)
+      ? ctxOrCanvas
+      : (ctxOrCanvas && ctxOrCanvas.canvas instanceof HTMLCanvasElement)
+        ? ctxOrCanvas.canvas
+        : null;
+    if (!canvas) {
+      console.error('❌ _safeChart: canvas not found. Received:', typeof ctxOrCanvas, ctxOrCanvas);
+      return null;
+    }
+    // Destroy any existing Chart.js instance on this canvas
+    if (window.Chart && window.Chart.getChart) {
+      try { var old = window.Chart.getChart(canvas); if (old) old.destroy(); } catch(e) {}
+    }
+    // Ensure canvas has explicit dimensions so Chart.js can draw
+    canvas.style.setProperty('height', '400px', 'important');
+    canvas.style.setProperty('width', '100%', 'important');
+    canvas.style.setProperty('display', 'block', 'important');
+    canvas.style.setProperty('max-height', '400px', 'important');
+    console.log('🎨 Creating Chart on canvas:', canvas.id, 'size:', canvas.clientWidth + 'x' + canvas.clientHeight);
+    // Ensure responsive config options
+    if (!config) config = {};
+    if (!config.options) config.options = {};
+    config.options.responsive = true;
+    config.options.maintainAspectRatio = true;
+    if (!config.options.aspectRatio) config.options.aspectRatio = 2;
+    config.devicePixelRatio = window.devicePixelRatio || 2;
+    try {
+      return new window.Chart(canvas, config);
+    } catch(err) {
+      console.error('❌ Chart.js creation error:', err.message);
+      return null;
+    }
+  };
+})();
+`;
 
-    // הוסף הגדרות רספונסיביות יציבות אחרי options: {
-    code = code.replace(
-      /options:\s*\{/g,
-      `options: {
-      ${responsiveOptions}`
-    );
+    // Redirect every new Chart( call to window._safeChart(
+    // This works for ALL patterns: const x = new Chart(ctx, {...}),
+    //   window.x = new Chart(...), new Chart(el, {...}), etc.
+    code = code.replace(/new\s+(?:window\.)?Chart\s*\(/g, 'window._safeChart(');
 
-    // תיקון הקוד בטוח יותר עם בדיקות
-    code = code.replace(
-      /new Chart\(([^,]+),\s*\{/g,
-      (match, canvasRef) => {
-        return `// Safe chart creation with validation
-        const chartCanvas = ${canvasRef};
-        if (!chartCanvas) {
-          console.error('❌ Canvas element not found:', '${canvasRef}');
-          return;
-        }
-        
-        // Destroy existing chart if exists
-        if (chartCanvas.chart) {
-          chartCanvas.chart.destroy();
-        }
-        
-        // Set stable dimensions safely
-        try {
-          chartCanvas.style.maxHeight = '400px';
-          chartCanvas.style.height = '400px';
-          chartCanvas.style.width = '100%';
-        } catch(e) {
-          console.warn('⚠️ Could not set canvas styles:', e);
-        }
-        
-        const chartInstance = new Chart(chartCanvas, {
-        devicePixelRatio: window.devicePixelRatio || 2,`;
-      }
-    );
-
-    // תיקון בטוח יותר לסוף יצירת הגרף
-    code = code.replace(
-      /new Chart\([^}]+\}\);/gs,
-      (match) => {
-        return match + `
-        
-        // 🎯 Safe stabilization after creation
-        if (typeof chartInstance !== 'undefined' && chartInstance && chartInstance.canvas) {
-          setTimeout(() => {
-            try {
-              const canvas = chartInstance.canvas;
-              if (canvas && canvas.style) {
-                canvas.style.maxHeight = '400px';
-                canvas.style.height = '400px';
-                
-                // Temporarily disable responsive to prevent size changes
-                if (chartInstance.options) {
-                  chartInstance.options.responsive = false;
-                  chartInstance.options.maintainAspectRatio = true;
-                  chartInstance.update('none');
-                  
-                  // Re-enable responsive after stabilization
-                  setTimeout(() => {
-                    if (chartInstance.options) {
-                      chartInstance.options.responsive = true;
-                    }
-                  }, 500);
-                }
-              }
-            } catch(stabilizeError) {
-              console.warn('⚠️ Chart stabilization warning:', stabilizeError);
-            }
-          }, 200);
-        }`;
-      }
-    );
-
-    return code;
+    return helperSetup + '\n' + code;
   }
 
   private stabilizeNewCharts() {
@@ -1725,6 +1675,7 @@ private addChartPairingLogic(code: string, scriptIndex: number): string {
       const chartId = canvas.id;
       if (chartId && (window as any).Chart) {
         const chartInstance = (window as any).Chart.getChart(chartId);
+        console.log(`📊 Chart.getChart('${chartId}') →`, chartInstance ? '✅ instance found' : '❌ NO INSTANCE (chart not created)');
         if (chartInstance && chartInstance.options) {
           setTimeout(() => {
             try {
