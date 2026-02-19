@@ -486,13 +486,16 @@
   border-radius: var(--r-lg);
   padding: 20px;
   margin: 1.2em 0;
-  overflow: hidden;
+  overflow: visible;
+  position: relative;
 }
 
 .ai-message-content .chart-wrapper,
 ::ng-deep .chart-wrapper {
   height: 420px;
+  max-height: 420px;
   position: relative;
+  width: 100%;
 }
 
 .ai-message-content .charts-container,
@@ -502,9 +505,20 @@
   flex-wrap: wrap;
 }
 
+/* Canvas — Chart.js requires explicit height, not just max-height */
+.ai-message-content canvas,
+::ng-deep canvas {
+  transition: none !important;
+  animation: none !important;
+  display: block;
+}
+
 .ai-message-content canvas[id*="chart"],
-::ng-deep canvas[id*="chart"] {
-  max-height: 400px;
+::ng-deep canvas[id*="chart"],
+::ng-deep .financial-chart {
+  height: 400px !important;
+  max-height: 400px !important;
+  width: 100% !important;
   transition: none !important;
   animation: none !important;
 }
@@ -1239,10 +1253,11 @@ mjx-container[display="true"] {
   .help-modal        { padding: 24px 16px; }
 
   .ai-message-content canvas[id*="chart"],
-  ::ng-deep canvas[id*="chart"] { max-height: 280px; }
+  ::ng-deep canvas[id*="chart"],
+  ::ng-deep .financial-chart { height: 280px !important; max-height: 280px !important; }
 
   .ai-message-content .chart-wrapper,
-  ::ng-deep .chart-wrapper { height: 300px; }
+  ::ng-deep .chart-wrapper { height: 300px; max-height: 300px; }
 }
 
 @media (max-width: 480px) {
