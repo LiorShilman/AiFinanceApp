@@ -1,3 +1,69 @@
+/* ═══════════════════════════════════════════════════════
+   GLOBAL DESIGN TOKENS & BASE RESET
+   ═══════════════════════════════════════════════════════ */
+:root {
+  --bg-base:     #0a0b0d;
+  --bg-surface:  #111318;
+  --bg-elevated: #181c24;
+  --bg-hover:    #1e2330;
+  --bg-input:    #141720;
+
+  --border:       rgba(255,255,255,0.07);
+  --border-light: rgba(255,255,255,0.12);
+  --border-focus: rgba(99,102,241,0.6);
+
+  --accent:      #6366f1;
+  --accent-h:    #818cf8;
+  --accent-dim:  rgba(99,102,241,0.12);
+  --accent-glow: rgba(99,102,241,0.25);
+
+  --text-primary:   #e8ecf4;
+  --text-secondary: #8b97aa;
+  --text-hint:      #4a5568;
+
+  --success: #10b981;
+  --error:   #ef4444;
+  --warn:    #f59e0b;
+
+  --r-sm:   6px;
+  --r-md:   10px;
+  --r-lg:   14px;
+  --r-xl:   20px;
+  --r-pill: 999px;
+
+  --t-fast: 150ms ease;
+  --t-base: 220ms ease;
+  --t-slow: 350ms ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  height: 100%;
+  background: #0a0b0d;
+}
+
+body {
+  height: 100%;
+  font-family: 'Inter', 'Assistant', 'Segoe UI', system-ui, sans-serif;
+  font-size: 16px;
+  background: #0a0b0d;
+  color: #e8ecf4;
+  direction: rtl;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  margin: 0;
+  padding: 0;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.18); }
+
+/* ═══════════════════════════════════════════════════════
+   CONVERSATION DIALOG (global, because it's a child component)
+   ═══════════════════════════════════════════════════════ */
 /* 📁 conversation-dialog.component.css */
 
 .conversation-dialog-overlay {
