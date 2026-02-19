@@ -74,7 +74,9 @@ export interface ConversationResponse {
   providedIn: 'root'
 })
 export class ConversationService {
-  private baseUrl = 'http://shilmanlior2608.ddns.net:15000/api/conversations';
+  private baseUrl = (window.location.hostname === 'localhost'
+    ? 'http://localhost:15001'
+    : 'http://shilmanlior2608.ddns.net:15001') + '/api/conversations';
   
   // State management
   private conversationsSubject = new BehaviorSubject<ConversationSummary[]>([]);
