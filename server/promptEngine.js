@@ -228,10 +228,10 @@ async function handlePrompt(sessionId, userMessage) {
   try {
     // ─── שלב 1: סיווג ───────────────────────────────────
     const classification = await classify(userMessage, history);
-    const { agents, complexity, source } = classification;
+    const { agents, complexity, source, depth } = classification;
     const agentIds = agents.map(a => a.id);
 
-    console.log(`🧭 סיווג (${source}): [${agents.map(a => `${a.id}(${a.confidence}%)`).join(', ')}] | mode: ${complexity}`);
+    console.log(`🧭 סיווג (${source}): [${agents.map(a => `${a.id}(${a.confidence}%)`).join(', ')}] | mode: ${complexity} | depth: ${depth}`);
 
     // ─── שלב 1.5: בדוק cache ─────────────────────────────
     const cached = getCachedResponse(agentIds, userMessage);
@@ -259,12 +259,12 @@ async function handlePrompt(sessionId, userMessage) {
     if (agents.length === 1) {
       const agentId = agents[0].id;
       console.log(`🤖 מפעיל מומחה יחיד: ${agentId}`);
-      const rawReply = await runAgent(agentId, userMessage, history);
+      const rawReply = await runAgent(agentId, userMessage, history, depth);
       result = wrapSingleResponse(agentId, rawReply);
 
     } else {
       console.log(`🤖 מפעיל ${agents.length} מומחים במקביל...`);
-      const { responses, failed } = await runAgentsInParallel(agents, userMessage, history);
+      const { responses, failed } = await runAgentsInParallel(agents, userMessage, history, depth);
       agentFailures = failed;
 
       if (responses.length === 0) {

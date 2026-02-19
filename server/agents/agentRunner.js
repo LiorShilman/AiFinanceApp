@@ -43,12 +43,53 @@ function buildAgentHistory(history) {
 }
 
 /**
+ * הוראות פורמט לפי עומק השאלה
+ * quick    — הגדרות / שאלות כלליות ≤ 25 מילים, ללא נתונים אישיים
+ * standard — שאלת המלצה / תכנון עם קצת נתונים
+ * deep     — ניתוח מלא עם נתונים מספריים אישיים
+ */
+function buildDepthInstructions(depth) {
+  switch (depth) {
+    case 'quick':
+      return `## הוראות פורמט — שאלה מהירה (quick)
+- תשובה קצרה: 2-4 פסקאות בלבד
+- אין גרפים, אין טבלאות מורכבות, אין 3 תרחישים
+- הסבר ברור ומדויק של המושג / ההגדרה
+- דוגמה מספרית אחת פשוטה אם רלוונטי
+- סיים בשאלה אחת שממשיכה את השיחה`;
+
+    case 'deep':
+      return `## הוראות פורמט — ניתוח מעמיק (deep)
+- תשובה מפורטת: 6-10 פסקאות
+- חובה: טבלת 3 תרחישים (שמרני / בסיס / אופטימי) עם מספרי המשתמש
+- חובה: לפחות גרף Chart.js אחד שמדגים את הניתוח
+- חובה: נוסחאות LaTeX עם החישובים המלאים
+- פרק המלצות ממוקד עם 3-5 צעדים מעשיים לביצוע
+- סיים עם שאלה עמוקה שמרחיבה את הניתוח`;
+
+    case 'standard':
+    default:
+      return `## הוראות פורמט — שאלה סטנדרטית (standard)
+- תשובה בינונית: 4-6 פסקאות
+- הצג חישוב אחד עם מספרי המשתמש (אם סופקו) או דוגמה ריאלית
+- גרף אחד אם יש ערך ויזואלי ברור
+- המלצה ממוקדת ומעשית
+- סיים בשאלה שממשיכה את השיחה`;
+  }
+}
+
+/**
  * מריץ מומחה יחיד עם ההיסטוריה המשותפת
  */
-async function runAgent(agentId, userMessage, history = []) {
+async function runAgent(agentId, userMessage, history = [], depth = 'standard') {
   const expertPrompt = AGENT_PROMPTS[agentId] || AGENT_PROMPTS.general;
+  const depthInstructions = buildDepthInstructions(depth);
 
   const systemPrompt = `${expertPrompt}
+
+---
+
+${depthInstructions}
 
 ---
 
@@ -56,7 +97,7 @@ ${baseRules}
 
 ---
 
-[Agent: ${agentId}] [Session messages: ${history.length}]`.trim();
+[Agent: ${agentId}] [Depth: ${depth}] [Session messages: ${history.length}]`.trim();
 
   const agentHistory = buildAgentHistory(history);
 
@@ -85,10 +126,10 @@ ${baseRules}
  * שדרוג: מדווח על כשלים — המשתמש יודע אם agent נכשל
  * @returns {{ responses: Array, failed: Array }}
  */
-async function runAgentsInParallel(agents, userMessage, history) {
+async function runAgentsInParallel(agents, userMessage, history, depth = 'standard') {
   const results = await Promise.allSettled(
     agents.map(agent =>
-      runAgent(agent.id, userMessage, history)
+      runAgent(agent.id, userMessage, history, depth)
         .then(content => ({
           agentId: agent.id,
           agentName: AGENT_META[agent.id]?.name || agent.id,

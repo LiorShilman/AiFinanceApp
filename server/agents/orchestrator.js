@@ -46,6 +46,50 @@ const AVAILABLE_AGENTS = {
 };
 
 /**
+ * זיהוי עומק תשובה נדרש לפי אופי השאלה
+ * quick    — הגדרות / שאלות כלליות / שיחה / ≤ 30 מילים בלי נתונים אישיים
+ * standard — שאלות תכנון + קצת נתונים, בקשת המלצה
+ * deep     — שאלה עם נתונים מספריים אישיים + בקשת ניתוח/תכנון מלא
+ */
+function detectDepth(message) {
+  const words = message.trim().split(/\s+/).length;
+  const lower = message.toLowerCase();
+
+  // סימנים ל-quick: הגדרה, מושג, שאלה קצרה בלי מספרים
+  const quickSignals = [
+    'מה זה', 'מה הם', 'מה הוא', 'מה היא', 'מהי', 'מהו',
+    'מה ההבדל', 'איך עובד', 'הסבר לי', 'ספר לי על',
+    'מה זאת', 'מה פירוש', 'מה המשמעות'
+  ];
+  const hasQuickSignal = quickSignals.some(s => lower.includes(s));
+  const hasPersonalNumbers = /\d{4,}/.test(message); // מספר 4+ ספרות = כסף/גיל/אחוז
+
+  if (hasQuickSignal && !hasPersonalNumbers && words <= 25) {
+    return 'quick';
+  }
+
+  // סימנים ל-deep: נתונים אישיים + בקשת ניתוח/תכנון
+  const deepSignals = [
+    'נתח', 'תנתח', 'בנה לי', 'תכנן', 'תכנית', 'ניתוח מלא',
+    'כמה יהיה', 'כמה אצבור', 'כמה אקבל', 'כמה אשלם',
+    'האם כדאי לי', 'מה עדיף עבורי', 'עזור לי לתכנן',
+    'תעשה לי חישוב', 'חשב לי', 'מה יקרה אם'
+  ];
+  const hasDeepSignal = deepSignals.some(s => lower.includes(s));
+  const hasManyNumbers = (message.match(/\d+/g) || []).length >= 3;
+  const isLong = words >= 40;
+
+  if ((hasDeepSignal || hasManyNumbers) && hasPersonalNumbers) {
+    return 'deep';
+  }
+  if (isLong && hasPersonalNumbers) {
+    return 'deep';
+  }
+
+  return 'standard';
+}
+
+/**
  * שלב 1: סיווג מהיר מקומי (keyword-based)
  * תוקן: סף >= 1 במקום >= 2 — שאלות עם מילת מפתח אחת ברורה מנותבות מיידית
  */
@@ -165,6 +209,10 @@ function buildContextSummary(history) {
  * שלב 2: אם לא ברור — סיווג AI עם context מלא
  */
 async function classify(message, history = []) {
+  // זיהוי עומק נדרש — quick / standard / deep
+  const depth = detectDepth(message);
+  console.log(`📏 עומק שאלה: ${depth}`);
+
   // שלב 1: סיווג מקומי
   const localScores = quickClassify(message);
   const sortedLocal = Object.entries(localScores)
@@ -182,6 +230,7 @@ async function classify(message, history = []) {
       return {
         agents: [{ id: topAgent[0], confidence: 90, reason: 'סיווג מקומי - מילת מפתח ברורה' }],
         complexity: 'single',
+        depth,
         source: 'local'
       };
     }
@@ -201,6 +250,7 @@ async function classify(message, history = []) {
       return {
         agents: selectedAgents,
         complexity: 'multi',
+        depth,
         source: 'local'
       };
     }
@@ -221,6 +271,7 @@ async function classify(message, history = []) {
     return {
       ...aiResult,
       agents: finalAgents,
+      depth,
       source: 'ai'
     };
   }
@@ -230,6 +281,7 @@ async function classify(message, history = []) {
   return {
     agents: [{ id: 'general', confidence: 50, reason: 'לא זוהה תחום ספציפי' }],
     complexity: 'single',
+    depth,
     source: 'fallback'
   };
 }
