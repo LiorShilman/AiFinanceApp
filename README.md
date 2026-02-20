@@ -7,11 +7,13 @@ An AI-powered financial advisor with a Hebrew RTL interface. Users chat with a m
 ## Features
 
 - **Multi-Agent AI** — Messages are routed to specialist advisors (pension, mortgage, investments, tax, budget) that run in parallel and synthesize a unified response
-- **LaTeX Math Rendering** — Financial formulas rendered via MathJax
-- **Interactive Charts** — Chart.js graphs generated dynamically inside AI responses
-- **Conversation Persistence** — Full conversation history saved to MongoDB Atlas
-- **RTL Hebrew UI** — Dark-mode interface designed right-to-left
-- **PDF Export** — Export conversations to PDF
+- **Question Depth Detection** — Automatically classifies questions as quick/standard/deep and routes accordingly
+- **LaTeX Math Rendering** — Financial formulas rendered via MathJax with auto-fixing for common syntax errors
+- **Interactive Charts** — Chart.js graphs generated dynamically inside AI responses with universal `_safeChart` interceptor
+- **Conversation Persistence** — Full conversation history saved to MongoDB Atlas with rich metadata
+- **Modern Dark UI** — Clean SaaS-style dark theme (Linear/Vercel inspired) with RTL Hebrew layout
+- **PDF Export** — Export conversations to PDF with formatted content
+- **Conversation Management** — Browse, search, filter, favorite, and delete saved conversations
 
 ---
 
@@ -200,24 +202,65 @@ POST /api/chat
 ## Key Technical Notes
 
 ### LaTeX Format
-Uses custom `MATHD{ }` (display block) and `MATHI{ }` (inline) syntax instead of standard `\[...\]` to avoid Windows backslash escaping issues.
+Uses custom `MATHD{ }` (display block) and `MATHI{ }` (inline) syntax instead of standard `\[...\]` to avoid Windows backslash escaping issues. The `latex-fixer.service.ts` auto-corrects common LaTeX errors like Hebrew text in formulas, invalid characters, and unbalanced brackets.
 
-### Chart.js Scripts
-Every chart embedded in AI responses is 100% self-contained — no shared state, no external variables. Each `<canvas>` element includes its own complete Chart.js initialization script.
+### Chart.js Rendering
+AI-generated charts are intercepted via a universal `window._safeChart` wrapper (Feb 2026 fix):
+- Replaces all `new Chart(...)` calls with `window._safeChart(...)` via simple string substitution
+- Handles both `HTMLCanvasElement` and `CanvasRenderingContext2D` arguments
+- Validates canvas exists in DOM, destroys existing charts, sets explicit dimensions
+- Works for ALL code patterns (const/let/var/window assignments, single/double quotes, etc.)
+- Each chart script is 100% self-contained with no external dependencies
 
 ### Dynamic API URL
-The client automatically selects the correct server URL based on `window.location.hostname`:
+Both `app.component.ts` and `conversation.service.ts` automatically select the correct server URL:
 - `localhost` → `http://localhost:15001`
 - Production → `http://shilmanlior2608.ddns.net:15001`
+
+### UI Design System
+- Dark SaaS theme with CSS custom properties (`:root` variables)
+- Colors: `--bg-base: #0a0b0d`, `--accent: #6366f1` (indigo)
+- Typography: Inter (Latin) + Assistant (Hebrew), 16px base
+- RTL layout throughout with `::ng-deep` for innerHTML-injected content
+- ViewEncapsulation.Emulated for scoped component styles
 
 ---
 
 ## Deployment (IIS + Node.js)
 
-- **Client**: Built Angular app deployed to IIS, served on port 15000 at `/AiFinanceApp/`
-- **Server**: Node.js API runs on port 15001 (separate from IIS)
+- **Client**: Built Angular app deployed to IIS at `/AiFinanceApp/` (base href configured in `angular.json`)
+- **Server**: Node.js API runs on port 15001 (separate process from IIS)
+- **CORS**: Configured for `shilmanlior2608.ddns.net:8080` (IIS proxy port)
 - **Firewall**: Windows Firewall rule required for port 15001
 - **Router**: Port forwarding `external:15001 → internal machine:15001`
+
+### Build & Deploy
+
+```bash
+# Build client
+cd client
+npm run build
+
+# Output: dist/ai-finance-app/
+# Deploy: Copy contents to IIS wwwroot/AiFinanceApp/
+
+# Start server (production)
+cd server
+node index.js
+
+# Start server (development with auto-reload)
+npx nodemon index.js
+```
+
+---
+
+## Recent Improvements (Feb 2026)
+
+- ✅ Fixed Chart.js rendering with universal `_safeChart` interceptor (replaced fragile regex)
+- ✅ Fixed conversation service URL port mismatch (15000 → 15001)
+- ✅ Restored Chart.js canvas rendering with explicit height and overflow fixes
+- ✅ Modern SaaS UI redesign with clean dark theme and CSS design tokens
+- ✅ Added question depth detection (quick/standard/deep) to AI pipeline
 
 ---
 
